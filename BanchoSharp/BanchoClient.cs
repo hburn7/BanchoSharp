@@ -25,8 +25,8 @@ public class BanchoClient : IBanchoClient
 	public event Action OnAuthenticated;
 	public event Action OnAuthenticationFailed;
 	public event Action<IChatMessage> OnMessageReceived;
-	public event Action<IDirectMessage> OnPrivateMessageReceived;
-	public event Action<IDirectMessage> OnAuthenticatedUserDMReceived;
+	public event Action<IPrivateMessage> OnPrivateMessageReceived;
+	public event Action<IPrivateMessage> OnAuthenticatedUserDMReceived;
 	public event Action<string> OnDeploy;
 	public event Action<string>? OnChannelJoinFailure;
 	public event Action<string> OnChannelParted;
@@ -163,12 +163,12 @@ public class BanchoClient : IBanchoClient
 
 			if (message.Command == "PRIVMSG")
 			{
-				message = new DirectChatMessage(line);
+				message = new PrivateChatMessage(line);
 			}
 
 			OnMessageReceived?.Invoke(message);
 
-			if (message is IDirectMessage dm)
+			if (message is IPrivateMessage dm)
 			{
 				OnPrivateMessageReceived?.Invoke(dm);
 

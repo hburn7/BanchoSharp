@@ -110,6 +110,33 @@ public class MultiplayerLobby : IMultiplayerLobby
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
 
+	public async Task UpdateAsync()
+	{
+		int count = 0;
+
+		Action<IPrivateMessage> trackSettingsMessages = delegate(IPrivateMessage message)
+		{
+			if (message.Sender == "BanchoBot" && message.Recipient == Channel)
+			{
+				UpdateLobbyFromBanchoBotSettingsResponse(message.Content);
+				count++;
+			}
+		};
+
+		_client.OnMessageReceived += m =>
+		{
+			if (m is IPrivateMessage dm)
+			{
+				trackSettingsMessages(dm);
+			}
+		};
+
+		while (count < 3)
+		{
+			await Task.Delay(100);
+		}
+	}
+
 	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoBotResponse)
 	{
 		if (banchoBotResponse.StartsWith("Room"))

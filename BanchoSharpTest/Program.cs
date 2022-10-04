@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using BanchoSharp;
+using BanchoSharp.Multiplayer;
 using System.Threading.Channels;
 
 var client = new BanchoClient(new BanchoClientConfig(new IrcCredentials("Stage",
@@ -24,8 +25,10 @@ client.OnDeploy += s =>
 client.OnAuthenticated += async () =>
 {
 	Console.WriteLine("Authenticated");
-	await client.QueryUserAsync("BanchoBot");
-	await client.SendAsync("BanchoBot", "!help");
+	await client.JoinChannelAsync("#mp_104229446");
+
+	var mp = new MultiplayerLobby(client, "#mp_104229446");
+	await mp.DisplaySettingsAsync();
 };
 
 client.OnChannelJoinFailure += name =>

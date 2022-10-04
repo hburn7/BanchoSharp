@@ -52,4 +52,10 @@ public interface IMultiplayerLobby
 	public Task RemoveRefereesAsync(params string[] usernames);
 	public Task SetMapAsync(int id, GameMode? gameMode = null);
 	public Task SendHelpMessageAsync();
+	/// <summary>
+	/// Updates this object's properties based on what is currently
+	/// set in the multplayer lobby
+	/// </summary>
+	/// <returns></returns>
+	public Task UpdateAsync();
 }

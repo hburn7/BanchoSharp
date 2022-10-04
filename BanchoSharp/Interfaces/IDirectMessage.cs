@@ -1,6 +1,6 @@
 namespace BanchoSharp.Interfaces;
 
-public interface IDirectMessage : IChatMessage
+public interface IPrivateMessage : IChatMessage
 {
 	/// <summary>
 	/// Where this message is being sent from
@@ -15,7 +15,7 @@ public interface IDirectMessage : IChatMessage
 	/// </summary>
 	public string Content { get; }
 	/// <summary>
-	/// Whether the message is private between users
+	/// Whether the message is direct and private between users
 	/// </summary>
-	public bool IsPrivate { get; }
+	public bool IsDirect { get; }
 }
