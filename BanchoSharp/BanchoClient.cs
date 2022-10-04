@@ -22,14 +22,15 @@ public class BanchoClient : IBanchoClient
 #pragma warning restore CS8618
 	public event Action OnConnected;
 	public event Action OnDisconnected;
-	public event Action? OnAuthenticated;
-	public event Action? OnAuthenticationFailed;
+	public event Action OnAuthenticated;
+	public event Action OnAuthenticationFailed;
 	public event Action<IChatMessage> OnMessageReceived;
-	public event Action<IDirectMessage> OnDirectMessageReceived;
-	public event Action<string>? OnDeploy;
-	public event Action<string>? OnChannelSuccessfullyConnected;
-	public event Action<string>? OnChannelParted;
-	public event Action<string>? OnUserQueried;
+	public event Action<IDirectMessage> OnPrivateMessageReceived;
+	public event Action<IDirectMessage> OnAuthenticatedUserDMReceived;
+	public event Action<string> OnDeploy;
+	public event Action<string>? OnChannelJoinFailure;
+	public event Action<string> OnChannelParted;
+	public event Action<string> OnUserQueried;
 	public List<string> Channels { get; } = new();
 	public bool IsConnected => _tcp?.Connected ?? false;
 	public bool IsAuthenticated { get; private set; } = false;
@@ -56,6 +57,22 @@ public class BanchoClient : IBanchoClient
 		await Execute($"USER {_clientConfig.Credentials.Username}");
 
 		OnConnected?.Invoke();
+
+		OnMessageReceived += m =>
+		{
+			if (m.Command == "403")
+			{
+				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
+				OnChannelJoinFailure?.Invoke(failedChannel);
+			}
+		};
+		
+		OnChannelJoinFailure += name =>
+		{
+			Channels.Remove(name);
+			Logger.Info($"Failed to connect to channel {name}");
+		};
+		
 		await ListenerAsync();
 	}
 
@@ -76,23 +93,20 @@ public class BanchoClient : IBanchoClient
 	public async Task JoinChannelAsync(string name)
 	{
 		await Execute($"JOIN {name}");
-	
-		// todo: check for connection error
-
-		OnChannelSuccessfullyConnected?.Invoke(name);
-		
-		// todo: channels.add(...);
+		Channels.Add(name);
 	}
 
 	public async Task PartChannelAsync(string name)
 	{
 		await Execute($"PART {name}");
+		Channels.Remove(name);
 		OnChannelParted?.Invoke(name);
 	}
 
 	public async Task QueryUserAsync(string user)
 	{
 		await Execute($"QUERY {user}");
+		Channels.Add(user);
 		OnUserQueried?.Invoke(user);
 	}
 
@@ -146,7 +160,6 @@ public class BanchoClient : IBanchoClient
 					OnAuthenticated?.Invoke();
 				}
 			}
-			
 
 			if (message.Command == "PRIVMSG")
 			{
@@ -157,7 +170,12 @@ public class BanchoClient : IBanchoClient
 
 			if (message is IDirectMessage dm)
 			{
-				OnDirectMessageReceived?.Invoke(dm);
+				OnPrivateMessageReceived?.Invoke(dm);
+
+				if (dm.Recipient == _clientConfig.Credentials.Username)
+				{
+					OnAuthenticatedUserDMReceived?.Invoke(dm);
+				}
 			}
 		}
 	}

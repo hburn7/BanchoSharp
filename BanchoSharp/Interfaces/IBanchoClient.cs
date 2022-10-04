@@ -25,18 +25,26 @@ public interface IBanchoClient
 	/// </summary>
 	public event Action<IChatMessage> OnMessageReceived;
 	/// <summary>
-	/// Fired whenever a DirectMessage is received
+	/// Fired whenever a PrivateMessage is received. Private messages
+	/// are not always private. Any chat sent between users or to any public chat
+	/// channel is denoted as a private message. To listen to strictly private messages
+	/// between users, listen to <see cref="OnAuthenticatedUserDMReceived"/>
 	/// </summary>
-	public event Action<IDirectMessage> OnDirectMessageReceived;
+	public event Action<IDirectMessage> OnPrivateMessageReceived;
+	/// <summary>
+	/// Fired whenever the authenticated user gets a new incoming direct message
+	/// from another user.
+	/// </summary>
+	public event Action<IDirectMessage> OnAuthenticatedUserDMReceived;
 	/// <summary>
 	/// Fired whenever the library sends a message directly to the server.
 	/// </summary>
 	public event Action<string> OnDeploy;
 
 	/// <summary>
-	/// Fired when the client successfully connects to a channel
+	/// Fired when the client failes to connect to a channel
 	/// </summary>
-	public event Action<string> OnChannelSuccessfullyConnected;
+	public event Action<string> OnChannelJoinFailure;
 	/// <summary>
 	/// Fired when the client has parted from a channel
 	/// </summary>
@@ -103,4 +111,6 @@ public interface IBanchoClient
 	/// <param name="user"></param>
 	/// <returns></returns>
 	public Task QueryUserAsync(string user);
+	
+	//todo: add commands like make, makeprivate, etc.
 }

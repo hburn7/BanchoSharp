@@ -16,7 +16,7 @@ public class BanchoClientConfig
 {
 	/// <summary>
 	/// Constructs the configuration that is used by the BanchoClient. Defaults to
-	/// ignoring QUIT, PART, JOIN, MODE, and PING commands sent by the server.
+	/// ignoring QUIT, PART, JOIN, MODE, PING and some other more spammy commands sent by the server.
 	/// </summary>
 	/// <param name="credentials"></param>
 	/// <param name="logLevel"></param>
@@ -44,6 +44,6 @@ public class BanchoClientConfig
 	public int Port { get; }
 	public string[]? IgnoredCommands { get; set; } =
 	{
-		"QUIT", "PART", "JOIN", "MODE", "PING"
+		"QUIT", "PART", "JOIN", "MODE", "PING", "366", "353", "333"
 	};
 }

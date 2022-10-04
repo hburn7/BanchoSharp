@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using BanchoSharp;
+using System.Threading.Channels;
 
 var client = new BanchoClient(new BanchoClientConfig(new IrcCredentials("Stage",
 	Environment.GetEnvironmentVariable("IRC_PASS")), LogLevel.None));
@@ -20,10 +21,18 @@ client.OnDeploy += s =>
 	}
 };
 
-client.OnAuthenticated += () => { Console.WriteLine("Authenticated"); };
+client.OnAuthenticated += async () =>
+{
+	Console.WriteLine("Authenticated");
+	await client.QueryUserAsync("BanchoBot");
+	await client.SendAsync("BanchoBot", "!help");
+};
+
+client.OnChannelJoinFailure += name =>
+{
+	Console.WriteLine($"Failed to join {name}");
+};
 
 
 await client.ConnectAsync();
-
-await client.JoinChannelAsync("#osu");
 
