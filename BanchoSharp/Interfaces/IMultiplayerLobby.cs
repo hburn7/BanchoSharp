@@ -15,7 +15,10 @@ public interface IMultiplayerLobby
 	public event Action OnClosed;
 	public event Action<MultiplayerPlayer> OnHostChanged;
 	public event Action<BeatmapShell> OnBeatmapChanged;
-	public event Action<MultiplayerPlayer, int> OnPlayerJoined;
+	public event Action<MultiplayerPlayer> OnPlayerJoined;
+	public event Action<MultiplayerPlayer> OnPlayerChangedTeam;
+	public event Action<MultiplayerPlayer> OnPlayerSlotMove;
+	public event Action<MultiplayerPlayer> OnPlayerDisconnected;
 	/// <summary>
 	/// Invoked when the host is selecting a new map
 	/// </summary>

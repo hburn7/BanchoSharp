@@ -82,6 +82,13 @@ public class MultiplayerLobby : IMultiplayerLobby
 			ResetMatchTimer();
 		};
 
+		OnPlayerJoined += player =>
+		{
+			Players.Add(player);
+		};
+
+		OnPlayerDisconnected += player => Players.Remove(player);
+
 		Task.Run(TimerWatcher).GetAwaiter().GetResult();
 	}
 
@@ -96,7 +103,10 @@ public class MultiplayerLobby : IMultiplayerLobby
 	public event Action? OnClosed;
 	public event Action<MultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
-	public event Action<MultiplayerPlayer, int>? OnPlayerJoined;
+	public event Action<MultiplayerPlayer>? OnPlayerJoined;
+	public event Action<MultiplayerPlayer>? OnPlayerChangedTeam;
+	public event Action<MultiplayerPlayer>? OnPlayerSlotMove;
+	public event Action<MultiplayerPlayer>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
 	public string Channel { get; }
 	public string Name { get; private set; }
@@ -191,7 +201,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 	public async Task SetHostAsync(string username)
 	{
 		await SendAsync($"!mp host {username}");
-		Host = Players.Find(x => x.Name.Equals(username, StringComparison.OrdinalIgnoreCase));
+		Host = FindPlayer(username);
 
 		OnHostChanged?.Invoke(Host!);
 	}
@@ -357,7 +367,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 		else if (banchoBotResponse.StartsWith("Changed match host to "))
 		{
 			string host = banchoBotResponse.Split("Changed match host to ")[1];
-			Host = Players.Find(x => x.Name.Equals(host, StringComparison.OrdinalIgnoreCase));
+			Host = FindPlayer(host);
 		}
 		else if (banchoBotResponse.Contains(" joined in slot "))
 		{
@@ -368,14 +378,14 @@ public class MultiplayerLobby : IMultiplayerLobby
 				int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
 				string team = banchoBotResponse.Split(" for team ")[1][..^1];
 				var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, color), slotNum);
+				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum, color));
 			}
 			else
 			{
 				string[] splits = banchoBotResponse.Split(" joined in slot ");
 				string playerName = splits[0];
 				int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName), slotNum);
+				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
 			}
 		}
 		else if (banchoBotResponse.Equals("Started the match"))
@@ -388,8 +398,19 @@ public class MultiplayerLobby : IMultiplayerLobby
 			OnMatchFinished?.Invoke();
 			MatchInProgress = false;
 		}
-		
+		else if (banchoBotResponse.Contains("moved to slot"))
+		{
+			string[] splits = banchoBotResponse.Split(" moved to slot ");
+			string name = splits[0].Trim();
+			string slot = splits[1].Trim();
+			int slotNum = int.Parse(slot);
+
+			var player = FindPlayer(name);
+			player!.Slot = slotNum;
+		}
 	}
+
+	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x == name);
 
 	private WinCondition ParseWinCondition(string wc) => wc switch
 	{
