@@ -46,7 +46,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
 
-	public MultiplayerLobby(IBanchoClient client, string channel)
+	public MultiplayerLobby(IBanchoClient client, string channel, string name)
 	{
 		if (!channel.StartsWith("#mp_"))
 		{
@@ -56,6 +56,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 		_client = client;
 
 		Channel = channel;
+		Name = name;
 		Size = 1;
 		GameMode = GameMode.osu;
 

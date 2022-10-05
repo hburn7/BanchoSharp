@@ -29,7 +29,7 @@ client.OnAuthenticated += async () =>
 	Console.WriteLine("Authenticated");
 	await client.JoinChannelAsync(lobby);
 
-	var mp = new MultiplayerLobby(client, lobby);
+	var mp = new MultiplayerLobby(client, lobby, "some lobby");
 
 	mp.OnLobbyTimerStarted += seconds => Console.WriteLine($"Timer started for {seconds}s.");
 	mp.OnLobbyTimerFinished += () => Console.WriteLine("Timer finished.");
