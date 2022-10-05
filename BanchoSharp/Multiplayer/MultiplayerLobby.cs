@@ -1,3 +1,4 @@
+using BanchoSharp.EventArgs;
 using BanchoSharp.Exceptions;
 using BanchoSharp.Interfaces;
 using System.Diagnostics;
@@ -88,7 +89,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 			Players.Add(player);
 		};
 
-		OnPlayerDisconnected += player => Players.Remove(player);
+		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
 
 		Task.Run(TimerWatcher).GetAwaiter().GetResult();
 	}
@@ -105,9 +106,9 @@ public class MultiplayerLobby : IMultiplayerLobby
 	public event Action<MultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
 	public event Action<MultiplayerPlayer>? OnPlayerJoined;
-	public event Action<MultiplayerPlayer>? OnPlayerChangedTeam;
-	public event Action<MultiplayerPlayer>? OnPlayerSlotMove;
-	public event Action<MultiplayerPlayer>? OnPlayerDisconnected;
+	public event Action<PlayerChangedTeamEventArgs>? OnPlayerChangedTeam;
+	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
+	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
 	public string Channel { get; }
 	public string Name { get; private set; }
@@ -190,6 +191,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 	{
 		await SendAsync("!mp close");
 		IsClosed = true;
+		_client.Channels.Remove(Channel);
 		OnClosed?.Invoke();
 	}
 
@@ -407,7 +409,10 @@ public class MultiplayerLobby : IMultiplayerLobby
 			int slotNum = int.Parse(slot);
 
 			var player = FindPlayer(name);
+			int previousSlot = player!.Slot;
 			player!.Slot = slotNum;
+			
+			OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
 		}
 	}
 

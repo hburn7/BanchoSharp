@@ -111,6 +111,13 @@ public interface IBanchoClient
 	/// <param name="user"></param>
 	/// <returns></returns>
 	public Task QueryUserAsync(string user);
-	
+
+	/// <summary>
+	/// Contacts BanchoBot to create a new tournament lobby.
+	/// </summary>
+	/// <param name="name">The name of the lobby</param>
+	/// <param name="isPrivate">Whether the multiplayer lobby is private</param>
+	/// <returns></returns>
+	public Task MakeTournamentLobbyAsync(string name, bool isPrivate = false);
 	//todo: add commands like make, makeprivate, etc.
 }

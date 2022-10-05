@@ -110,6 +110,19 @@ public class BanchoClient : IBanchoClient
 		OnUserQueried?.Invoke(user);
 	}
 
+	public async Task MakeTournamentLobbyAsync(string name, bool isPrivate = false)
+	{
+		if (!Channels.Contains("BanchoBot"))
+		{
+			await JoinChannelAsync("BanchoBot");
+		}
+
+		string arg = isPrivate ? "makeprivate" : "make";
+		await SendAsync("BanchoBot", $"!mp {arg} {name}");
+		
+		// todo: join the channel sent by banchobot
+	}
+
 	/// <summary>
 	///  Executes a message directly to the IRC server
 	/// </summary>
@@ -124,6 +137,7 @@ public class BanchoClient : IBanchoClient
 		await _writer!.WriteLineAsync(message);
 		OnDeploy?.Invoke(message);
 	}
+	
 
 	private async Task ListenerAsync()
 	{
@@ -177,6 +191,24 @@ public class BanchoClient : IBanchoClient
 					OnAuthenticatedUserDMReceived?.Invoke(dm);
 				}
 			}
+		}
+	}
+
+	/// <summary>
+	/// Performs various automations, such as joining new tournament channels
+	/// upon receiving notification of their creation. Assumes messages
+	/// are sent by BanchoBot
+	/// </summary>
+	/// <param name="message"></param>
+	private async Task ProcessBanchoBotResponseAsync(string message)
+	{
+		if (message.StartsWith("Created the tournament match "))
+		{
+			string[] splits = message.Split();
+			string url = splits[4];
+			int subStart = url.LastIndexOf('/');
+			int id = int.Parse(url[(subStart + 1)..]);
+			await JoinChannelAsync($"#mp_{id}");
 		}
 	}
 }
