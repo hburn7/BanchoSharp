@@ -4,6 +4,23 @@ namespace BanchoSharp.Interfaces;
 
 public interface IMultiplayerLobby
 {
+	public event Action OnSettingsUpdated;
+	public event Action<int> OnLobbyTimerStarted;
+	public event Action OnLobbyTimerFinished;
+	public event Action<int> OnMatchStartTimerStarted;
+	public event Action OnMatchStartTimerFinished;
+	public event Action OnMatchAborted;
+	public event Action OnMatchStarted;
+	public event Action OnMatchFinished;
+	public event Action OnClosed;
+	public event Action<MultiplayerPlayer> OnHostChanged;
+	public event Action<BeatmapShell> OnBeatmapChanged;
+	public event Action<MultiplayerPlayer, int> OnPlayerJoined;
+	/// <summary>
+	/// Invoked when the host is selecting a new map
+	/// </summary>
+	public event Action OnHostChangingMap;
+	
 	/// <summary>
 	///  The constant name of the multiplayer channel
 	/// </summary>
@@ -20,6 +37,18 @@ public interface IMultiplayerLobby
 	///  The current size of the lobby
 	/// </summary>
 	public int Size { get; }
+	/// <summary>
+	/// The current host of the lobby
+	/// </summary>
+	public MultiplayerPlayer? Host { get; }
+	public bool HostIsChangingMap { get; }
+	public bool MatchInProgress { get; }
+	public bool IsLocked { get; }
+	public bool IsClosed { get; }
+	TimeSpan? LobbyTimerRemaining { get; }
+	TimeSpan? MatchTimerRemaining { get; }
+	public bool MatchStartTimerInProgress { get; }
+	public bool LobbyTimerInProgress { get; }
 	public LobbyFormat Format { get; }
 	public WinCondition WinCondition { get; }
 	public GameMode GameMode { get; }
@@ -44,13 +73,13 @@ public interface IMultiplayerLobby
 	public Task SetModsAsync(params string[] mods);
 	public Task SetModsAsync(string mods);
 	public Task SetTimerAsync(int seconds);
-	public Task SetStartTimerAsync(int seconds);
+	public Task SetMatchStartTimerAsync(int seconds);
 	public Task StartAsync();
 	public Task KickAsync(string username);
 	public Task BanAsync(string username);
 	public Task AddRefereeAsync(params string[] usernames);
 	public Task RemoveRefereesAsync(params string[] usernames);
-	public Task SetMapAsync(int id, GameMode? gameMode = null);
+	public Task SetMapAsync(BeatmapShell beatmap);
 	public Task SendHelpMessageAsync();
 	/// <summary>
 	/// Updates this object's properties based on what is currently
