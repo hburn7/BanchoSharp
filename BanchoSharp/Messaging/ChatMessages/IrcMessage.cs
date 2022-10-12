@@ -27,7 +27,6 @@
 #endregion
 
 using BanchoSharp.Interfaces;
-using System.Text.RegularExpressions;
 
 namespace BanchoSharp.Messaging.ChatMessages;
 
@@ -38,8 +37,6 @@ namespace BanchoSharp.Messaging.ChatMessages;
 // http://ircv3.atheme.org/specification/message-tags-3.2
 public class IrcMessage : IChatMessage
 {
-	private static readonly Regex HostmaskRegex = new("[!@]", RegexOptions.Compiled);
-
 	/// <summary>
 	/// Wrapper for a raw IRC string sent from an IRC server.
 	/// </summary>
@@ -199,22 +196,6 @@ public class IrcMessage : IChatMessage
 		}
 	}
 
-	private Hostmask? GetHostmaskFromPrefix()
-	{
-		if (!IsPrefixHostmask)
-		{
-			return null;
-		}
-
-		string[] parts = HostmaskRegex.Split(Prefix);
-		return new Hostmask
-		{
-			Nickname = parts[0],
-			Username = parts[1],
-			Hostname = parts[2]
-		};
-	}
-
 	public override string ToString()
 	{
 		if (String.IsNullOrWhiteSpace(Command))
@@ -251,8 +232,8 @@ public class IrcMessage : IChatMessage
 				bool lastHasSpaces = processedParams.Last().IndexOf(' ') != -1;
 				parts.AddRange(
 					processedParams.Take(processedParams.Count - (lastHasSpaces ? 1 : 0))
-					               .SelectMany(p => p.IndexOf(' ') == -1
-						               ? new[] { p }
+					               .SelectMany(p => !p.Contains(' ')
+                                       ? new[] { p }
 						               : p.Split(' ').Where(s => !String.IsNullOrWhiteSpace(s)))
 				);
 
@@ -274,12 +255,5 @@ public class IrcMessage : IChatMessage
 		}
 
 		return position;
-	}
-
-	internal class Hostmask
-	{
-		public string Hostname { get; set; }
-		public string Nickname { get; set; }
-		public string Username { get; set; }
 	}
 }

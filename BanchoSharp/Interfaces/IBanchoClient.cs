@@ -30,12 +30,12 @@ public interface IBanchoClient
 	/// channel is denoted as a private message. To listen to strictly private messages
 	/// between users, listen to <see cref="OnAuthenticatedUserDMReceived"/>
 	/// </summary>
-	public event Action<IPrivateMessage> OnPrivateMessageReceived;
+	public event Action<IPrivateIrcMessage> OnPrivateMessageReceived;
 	/// <summary>
 	/// Fired whenever the authenticated user gets a new incoming direct message
 	/// from another user.
 	/// </summary>
-	public event Action<IPrivateMessage> OnAuthenticatedUserDMReceived;
+	public event Action<IPrivateIrcMessage> OnAuthenticatedUserDMReceived;
 	/// <summary>
 	/// Fired whenever the library sends a message directly to the server.
 	/// </summary>

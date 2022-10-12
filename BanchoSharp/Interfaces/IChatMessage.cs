@@ -11,7 +11,8 @@ public interface IChatMessage
 	/// </summary>
 	public IList<string> Parameters { get; }
 	/// <summary>
-	/// Documentation needed
+	/// IRC V3.2 tags (not really relevant to this library, but maybe one day
+	/// Bancho moves to V3.2)
 	/// </summary>
 	public IDictionary<string, string> Tags { get; }
 	/// <summary>

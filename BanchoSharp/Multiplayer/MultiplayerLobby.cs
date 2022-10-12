@@ -66,7 +66,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 
 		_client.OnMessageReceived += m =>
 		{
-			if (m is IPrivateMessage { Sender: "BanchoBot" } pm && pm.Recipient == channel)
+			if (m is IPrivateIrcMessage { Sender: "BanchoBot" } pm && pm.Recipient == channel)
 			{
 				UpdateLobbyFromBanchoBotSettingsResponse(pm.Content);
 			}
@@ -269,7 +269,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 		var sw = new Stopwatch();
 		sw.Start();
 
-		var trackSettingsMessages = delegate(IPrivateMessage message)
+		var trackSettingsMessages = delegate(IPrivateIrcMessage message)
 		{
 			if (message.Sender == "BanchoBot" && message.Recipient == Channel)
 			{
@@ -280,7 +280,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 
 		_client.OnMessageReceived += m =>
 		{
-			if (m is IPrivateMessage dm)
+			if (m is IPrivateIrcMessage dm)
 			{
 				trackSettingsMessages(dm);
 			}

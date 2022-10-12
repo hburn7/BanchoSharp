@@ -2,9 +2,9 @@ using BanchoSharp.Interfaces;
 
 namespace BanchoSharp.Messaging.ChatMessages;
 
-public class PrivateIrcMessage : IrcMessage, IPrivateMessage
+public class PrivateIrcIrcMessage : IrcMessage, IPrivateIrcMessage
 {
-	public PrivateIrcMessage(string rawMessage) : base(rawMessage)
+	public PrivateIrcIrcMessage(string rawMessage) : base(rawMessage)
 	{
 		Recipient = Parameters[0];
 		Content = Parameters[1]; //string.Join(" ", Parameters[1..])[1..]; // The final [1..] removes the leading :
