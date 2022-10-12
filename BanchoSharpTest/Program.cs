@@ -4,22 +4,7 @@ using BanchoSharp;
 using BanchoSharp.Multiplayer;
 
 var client = new BanchoClient(new BanchoClientConfig(new IrcCredentials("Stage",
-	Environment.GetEnvironmentVariable("IRC_PASS")), LogLevel.None));
-
-client.OnConnected += () => Console.WriteLine("Connected");
-
-client.OnMessageReceived += m =>
-{
-	Console.WriteLine(m.RawMessage);
-};
-
-client.OnDeploy += s =>
-{
-	if (!s.Contains("PASS"))
-	{
-		Console.WriteLine(s);
-	}
-};
+	Environment.GetEnvironmentVariable("IRC_PASS")), LogLevel.Debug));
 
 client.OnAuthenticated += async () =>
 {
@@ -46,14 +31,6 @@ client.OnAuthenticated += async () =>
 	
 	Console.WriteLine(mp.MatchInProgress);
 };
-
-client.OnChannelJoinFailure += name =>
-{
-	Console.WriteLine($"Failed to join {name}");
-};
-
-
-
 
 await client.ConnectAsync();
 

@@ -7,14 +7,13 @@ public interface IChatMessage
 	/// </summary>
 	public string RawMessage { get; }
 	/// <summary>
-	/// Parts of the message, as sent by the server,
-	/// according to the IRC standard.
-	/// </summary>
-	public string[] Parts { get; }
-	/// <summary>
 	/// The message's command parameters
 	/// </summary>
-	public string[] Parameters { get; }
+	public IList<string> Parameters { get; }
+	/// <summary>
+	/// Documentation needed
+	/// </summary>
+	public IDictionary<string, string> Tags { get; }
 	/// <summary>
 	/// The IRC command of this message
 	/// </summary>
@@ -24,6 +23,9 @@ public interface IChatMessage
 	/// The message prefix. A prefix characterizes a different
 	/// channel type. See here for more info: http://www.faqs.org/rfcs/rfc2812.html
 	/// </summary>
-	public string? Prefix { get; }
+	public string Prefix { get; }
+	/// <summary>
+	/// The moment in time for which this message was created
+	/// </summary>
 	public DateTime Timestamp { get; }
 }

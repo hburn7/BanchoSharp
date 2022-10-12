@@ -18,7 +18,11 @@ public class BanchoClient : IBanchoClient
 	/// </summary>
 	/// <param name="clientConfig"></param>
 #pragma warning disable CS8618
-	public BanchoClient(BanchoClientConfig clientConfig) { _clientConfig = clientConfig; }
+	public BanchoClient(BanchoClientConfig clientConfig)
+	{
+		_clientConfig = clientConfig;
+		RegisterEvents();
+	}
 #pragma warning restore CS8618
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -35,29 +39,18 @@ public class BanchoClient : IBanchoClient
 	public bool IsConnected => _tcp?.Connected ?? false;
 	public bool IsAuthenticated { get; private set; } = false;
 
-	public async Task ConnectAsync()
+	private void RegisterEvents()
 	{
-		if (IsConnected)
-		{
-			return;
-		}
-
-		_tcp = new TcpClient(_clientConfig.Host, _clientConfig.Port);
-
-		var ns = _tcp.GetStream();
-		_reader = new StreamReader(ns);
-		_writer = new StreamWriter(ns)
-		{
-			NewLine = "\r\n",
-			AutoFlush = true
-		};
-
-		await Execute($"PASS {_clientConfig.Credentials.Password}");
-		await Execute($"NICK {_clientConfig.Credentials.Username}");
-		await Execute($"USER {_clientConfig.Credentials.Username}");
-
-		OnConnected?.Invoke();
-
+		OnConnected += () => Logger.Info("Client connected");
+		OnDisconnected += () => Logger.Info("Client disconnected");
+		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
+		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
+		OnMessageReceived += m => Logger.Debug($"Message received: {m}");
+		OnDeploy += s => Logger.Debug($"Deployed message to osu!Bancho: {s}");
+		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
+		OnChannelParted += c => Logger.Info($"Parted {c}");
+		OnUserQueried += u => Logger.Info($"Querying {u}");
+		
 		OnMessageReceived += m =>
 		{
 			if (m.Command == "403")
@@ -72,7 +65,30 @@ public class BanchoClient : IBanchoClient
 			Channels.Remove(name);
 			Logger.Info($"Failed to connect to channel {name}");
 		};
-		
+	}
+	
+	public async Task ConnectAsync()
+	{
+		if (IsConnected)
+		{
+			return;
+		}
+
+		_tcp = new TcpClient(_clientConfig.Host, _clientConfig.Port);
+		OnConnected?.Invoke();
+
+		var ns = _tcp.GetStream();
+		_reader = new StreamReader(ns);
+		_writer = new StreamWriter(ns)
+		{
+			NewLine = "\r\n",
+			AutoFlush = true
+		};
+
+		await Execute($"PASS {_clientConfig.Credentials.Password}");
+		await Execute($"NICK {_clientConfig.Credentials.Username}");
+		await Execute($"USER {_clientConfig.Credentials.Username}");
+
 		await ListenerAsync();
 	}
 
@@ -150,7 +166,7 @@ public class BanchoClient : IBanchoClient
 				continue;
 			}
 
-			IChatMessage message = new ChatMessage(line);
+			IChatMessage message = new IrcMessage(line);
 			if (_clientConfig.IgnoredCommands?.Any(x => x.ToString().Equals(message.Command)) ?? false)
 			{
 				continue;
@@ -165,7 +181,7 @@ public class BanchoClient : IBanchoClient
 					OnAuthenticationFailed?.Invoke();
 
 					await DisconnectAsync();
-					throw new IrcConnectionFailureException();
+					throw new IrcClientNotAuthenticatedException("Authentication failure");
 				}
 
 				if (message.Command == "001")
@@ -177,7 +193,7 @@ public class BanchoClient : IBanchoClient
 
 			if (message.Command == "PRIVMSG")
 			{
-				message = new PrivateChatMessage(line);
+				message = new PrivateIrcMessage(line);
 			}
 
 			OnMessageReceived?.Invoke(message);
