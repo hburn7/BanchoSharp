@@ -7,8 +7,8 @@ public class PrivateIrcMessage : IrcMessage, IPrivateMessage
 	public PrivateIrcMessage(string rawMessage) : base(rawMessage)
 	{
 		Recipient = Parameters[0];
-		Content = ""; //string.Join(" ", Parameters[1..])[1..]; // The final [1..] removes the leading :
-		Sender = RawMessage.Split(":")[1].Split("!")[0];
+		Content = Parameters[1]; //string.Join(" ", Parameters[1..])[1..]; // The final [1..] removes the leading :
+		Sender = Prefix.Split("!cho@ppy.sh")[0][1..]; // The trailing [1..] removes the first colon
 		IsDirect = !Sender.StartsWith("#");
 	}
 
