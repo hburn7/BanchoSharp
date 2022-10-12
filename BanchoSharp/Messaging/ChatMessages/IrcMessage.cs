@@ -35,7 +35,7 @@ namespace BanchoSharp.Messaging.ChatMessages;
 //
 // Which is itself an impelemntation of RFC 2812: http://tools.ietf.org/html/rfc2812
 // http://ircv3.atheme.org/specification/message-tags-3.2
-public class IrcMessage : IChatMessage
+public class IrcMessage : IIrcMessage
 {
 	/// <summary>
 	/// Wrapper for a raw IRC string sent from an IRC server.

@@ -1,6 +1,6 @@
 namespace BanchoSharp.Interfaces;
 
-public interface IChatMessage
+public interface IIrcMessage
 {
 	/// <summary>
 	/// Raw data as sent from the server

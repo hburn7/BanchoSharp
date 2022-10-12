@@ -28,7 +28,7 @@ public class BanchoClient : IBanchoClient
 	public event Action OnDisconnected;
 	public event Action OnAuthenticated;
 	public event Action OnAuthenticationFailed;
-	public event Action<IChatMessage> OnMessageReceived;
+	public event Action<IIrcMessage> OnMessageReceived;
 	public event Action<IPrivateIrcMessage> OnPrivateMessageReceived;
 	public event Action<IPrivateIrcMessage> OnAuthenticatedUserDMReceived;
 	public event Action<string> OnDeploy;
@@ -166,7 +166,7 @@ public class BanchoClient : IBanchoClient
 				continue;
 			}
 
-			IChatMessage message = new IrcMessage(line);
+			IIrcMessage message = new IrcMessage(line);
 			if (_clientConfig.IgnoredCommands?.Any(x => x.ToString().Equals(message.Command)) ?? false)
 			{
 				continue;
@@ -193,7 +193,7 @@ public class BanchoClient : IBanchoClient
 
 			if (message.Command == "PRIVMSG")
 			{
-				message = new PrivateIrcIrcMessage(line);
+				message = new PrivateIrcMessage(line);
 			}
 
 			OnMessageReceived?.Invoke(message);

@@ -23,7 +23,7 @@ public interface IBanchoClient
 	/// <summary>
 	/// Fired whenever a message is received by the client
 	/// </summary>
-	public event Action<IChatMessage> OnMessageReceived;
+	public event Action<IIrcMessage> OnMessageReceived;
 	/// <summary>
 	/// Fired whenever a PrivateMessage is received. Private messages
 	/// are not always private. Any chat sent between users or to any public chat

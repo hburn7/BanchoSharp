@@ -1,6 +1,8 @@
+using BanchoSharp.Interfaces;
+
 namespace BanchoSharp;
 
-public class IrcCredentials
+public class IrcCredentials : IIrcCredentials
 {
 	public IrcCredentials(string username, string password)
 	{
@@ -22,7 +24,7 @@ public class BanchoClientConfig
 	/// <param name="logLevel"></param>
 	/// <param name="host">Should either be irc.ppy.sh or cho.ppy.sh</param>
 	/// <param name="port">The port to connect to. You probably will never need to change this</param>
-	public BanchoClientConfig(IrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
+	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
 		string host = "irc.ppy.sh", int port = 6667)
 	{
 		Credentials = credentials;
@@ -39,7 +41,7 @@ public class BanchoClientConfig
 		IgnoredCommands = ignoredCommands;
 	}
 
-	public IrcCredentials Credentials { get; }
+	public IIrcCredentials Credentials { get; }
 	public string Host { get; }
 	public int Port { get; }
 	public string[]? IgnoredCommands { get; set; } =

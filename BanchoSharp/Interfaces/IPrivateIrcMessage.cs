@@ -1,6 +1,6 @@
 namespace BanchoSharp.Interfaces;
 
-public interface IPrivateIrcMessage : IChatMessage
+public interface IPrivateIrcMessage : IIrcMessage
 {
 	/// <summary>
 	/// Where this message is being sent from
