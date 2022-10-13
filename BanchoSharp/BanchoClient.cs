@@ -1,5 +1,6 @@
 ﻿using BanchoSharp.Exceptions;
 using BanchoSharp.Interfaces;
+using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
 using System.Net.Sockets;
 
@@ -7,8 +8,6 @@ namespace BanchoSharp;
 
 public class BanchoClient : IBanchoClient
 {
-	private readonly BanchoClientConfig _clientConfig;
-	
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
@@ -20,10 +19,11 @@ public class BanchoClient : IBanchoClient
 #pragma warning disable CS8618
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
-		_clientConfig = clientConfig;
+		ClientConfig = clientConfig;
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
+	public BanchoClientConfig ClientConfig { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
 	public event Action OnAuthenticated;
@@ -32,41 +32,14 @@ public class BanchoClient : IBanchoClient
 	public event Action<IPrivateIrcMessage> OnPrivateMessageReceived;
 	public event Action<IPrivateIrcMessage> OnAuthenticatedUserDMReceived;
 	public event Action<string> OnDeploy;
+	public event Action<IChatChannel>? OnChannelJoined;
 	public event Action<string>? OnChannelJoinFailure;
-	public event Action<string> OnChannelParted;
+	public event Action<IChatChannel> OnChannelParted;
 	public event Action<string> OnUserQueried;
-	public List<string> Channels { get; } = new();
+	public IList<IChatChannel> Channels { get; } = new List<IChatChannel>();
 	public bool IsConnected => _tcp?.Connected ?? false;
-	public bool IsAuthenticated { get; private set; } = false;
+	public bool IsAuthenticated { get; private set; }
 
-	private void RegisterEvents()
-	{
-		OnConnected += () => Logger.Info("Client connected");
-		OnDisconnected += () => Logger.Info("Client disconnected");
-		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
-		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
-		OnMessageReceived += m => Logger.Debug($"Message received: {m}");
-		OnDeploy += s => Logger.Debug($"Deployed message to osu!Bancho: {s}");
-		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
-		OnChannelParted += c => Logger.Info($"Parted {c}");
-		OnUserQueried += u => Logger.Info($"Querying {u}");
-		
-		OnMessageReceived += m =>
-		{
-			if (m.Command == "403")
-			{
-				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
-				OnChannelJoinFailure?.Invoke(failedChannel);
-			}
-		};
-		
-		OnChannelJoinFailure += name =>
-		{
-			Channels.Remove(name);
-			Logger.Info($"Failed to connect to channel {name}");
-		};
-	}
-	
 	public async Task ConnectAsync()
 	{
 		if (IsConnected)
@@ -74,7 +47,7 @@ public class BanchoClient : IBanchoClient
 			return;
 		}
 
-		_tcp = new TcpClient(_clientConfig.Host, _clientConfig.Port);
+		_tcp = new TcpClient(ClientConfig.Host, ClientConfig.Port);
 		OnConnected?.Invoke();
 
 		var ns = _tcp.GetStream();
@@ -85,9 +58,9 @@ public class BanchoClient : IBanchoClient
 			AutoFlush = true
 		};
 
-		await Execute($"PASS {_clientConfig.Credentials.Password}");
-		await Execute($"NICK {_clientConfig.Credentials.Username}");
-		await Execute($"USER {_clientConfig.Credentials.Username}");
+		await Execute($"PASS {ClientConfig.Credentials.Password}");
+		await Execute($"NICK {ClientConfig.Credentials.Username}");
+		await Execute($"USER {ClientConfig.Credentials.Username}");
 
 		await ListenerAsync();
 	}
@@ -104,39 +77,84 @@ public class BanchoClient : IBanchoClient
 	}
 
 	public async Task SendAsync(string message) => await Execute(message);
-	public async Task SendAsync(string destination, string content) => await Execute($"PRIVMSG {destination} {content}");
+	public async Task SendPrivateMessageAsync(string destination, string content) => await Execute($"PRIVMSG {destination} {content}");
 
 	public async Task JoinChannelAsync(string name)
 	{
 		await Execute($"JOIN {name}");
-		Channels.Add(name);
+		var channel = new Channel(name);
+		Channels.Add(channel);
+		OnChannelJoined?.Invoke(channel);
 	}
 
 	public async Task PartChannelAsync(string name)
 	{
 		await Execute($"PART {name}");
-		Channels.Remove(name);
-		OnChannelParted?.Invoke(name);
+		var channel = Channels.FirstOrDefault(x => x.FullName == name);
+
+		if (channel == null)
+		{
+			Logger.Warn($"Requested removal of channel {name} but a match was not found in the channels list.");
+			return;
+		}
+		
+		Channels.Remove(channel);
+		OnChannelParted?.Invoke(channel);
 	}
 
 	public async Task QueryUserAsync(string user)
 	{
 		await Execute($"QUERY {user}");
-		Channels.Add(user);
+		Channels.Add(new Channel(user));
 		OnUserQueried?.Invoke(user);
 	}
 
 	public async Task MakeTournamentLobbyAsync(string name, bool isPrivate = false)
 	{
-		if (!Channels.Contains("BanchoBot"))
+		if (!Channels.Any(x => x.FullName == "BanchoBot"))
 		{
 			await JoinChannelAsync("BanchoBot");
 		}
 
 		string arg = isPrivate ? "makeprivate" : "make";
-		await SendAsync("BanchoBot", $"!mp {arg} {name}");
-		
+		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
+
 		// todo: join the channel sent by banchobot
+	}
+
+	private void RegisterEvents()
+	{
+		OnConnected += () => Logger.Info("Client connected");
+		OnDisconnected += () => Logger.Info("Client disconnected");
+		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
+		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
+		OnMessageReceived += m => Logger.Debug($"Message received: {m}");
+		OnDeploy += s => Logger.Debug($"Deployed message to osu!Bancho: {s}");
+		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
+		OnChannelParted += c => Logger.Info($"Parted {c}");
+		OnUserQueried += u => Logger.Info($"Querying {u}");
+
+		OnMessageReceived += m =>
+		{
+			if (m.Command == "403")
+			{
+				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
+				OnChannelJoinFailure?.Invoke(failedChannel);
+			}
+		};
+
+		OnChannelJoinFailure += name =>
+		{
+			var match = Channels.FirstOrDefault(x => x.FullName == name);
+			if (match != null)
+			{
+				Channels.Remove(match);
+			}
+			Logger.Info($"Failed to connect to channel {name}");
+		};
+
+		OnAuthenticated += () => this.IsAuthenticated = true;
+		OnDisconnected += () => this.IsAuthenticated = false;
 	}
 
 	/// <summary>
@@ -153,7 +171,6 @@ public class BanchoClient : IBanchoClient
 		await _writer!.WriteLineAsync(message);
 		OnDeploy?.Invoke(message);
 	}
-	
 
 	private async Task ListenerAsync()
 	{
@@ -167,7 +184,7 @@ public class BanchoClient : IBanchoClient
 			}
 
 			IIrcMessage message = new IrcMessage(line);
-			if (_clientConfig.IgnoredCommands?.Any(x => x.ToString().Equals(message.Command)) ?? false)
+			if (ClientConfig.IgnoredCommands?.Any(x => x.ToString().Equals(message.Command)) ?? false)
 			{
 				continue;
 			}
@@ -202,7 +219,7 @@ public class BanchoClient : IBanchoClient
 			{
 				OnPrivateMessageReceived?.Invoke(dm);
 
-				if (dm.Recipient == _clientConfig.Credentials.Username)
+				if (dm.Recipient == ClientConfig.Credentials.Username)
 				{
 					OnAuthenticatedUserDMReceived?.Invoke(dm);
 				}
@@ -211,9 +228,9 @@ public class BanchoClient : IBanchoClient
 	}
 
 	/// <summary>
-	/// Performs various automations, such as joining new tournament channels
-	/// upon receiving notification of their creation. Assumes messages
-	/// are sent by BanchoBot
+	///  Performs various automations, such as joining new tournament channels
+	///  upon receiving notification of their creation. Assumes messages
+	///  are sent by BanchoBot
 	/// </summary>
 	/// <param name="message"></param>
 	private async Task ProcessBanchoBotResponseAsync(string message)

@@ -40,7 +40,7 @@ public interface IBanchoClient
 	/// Fired whenever the library sends a message directly to the server.
 	/// </summary>
 	public event Action<string> OnDeploy;
-
+	public event Action<IChatChannel> OnChannelJoined;
 	/// <summary>
 	/// Fired when the client failes to connect to a channel
 	/// </summary>
@@ -48,16 +48,16 @@ public interface IBanchoClient
 	/// <summary>
 	/// Fired when the client has parted from a channel
 	/// </summary>
-	public event Action<string> OnChannelParted;
+	public event Action<IChatChannel> OnChannelParted;
 	/// <summary>
 	/// Fired when a query is called on a user
 	/// </summary>
 	public event Action<string> OnUserQueried;
-	
+	public BanchoClientConfig ClientConfig { get; }
 	/// <summary>
 	/// A list of channels that the client is currently connected to
 	/// </summary>
-	public List<string> Channels { get; }
+	public IList<IChatChannel> Channels { get; }
 	
 	/// <summary>
 	/// Whether the client is currently connected
@@ -91,7 +91,7 @@ public interface IBanchoClient
 	/// <param name="destination">The channel or user to send to</param>
 	/// <param name="content">The text to send</param>
 	/// <returns></returns>
-	public Task SendAsync(string destination, string content);
+	public Task SendPrivateMessageAsync(string destination, string content);
 
 	/// <summary>
 	/// Connects to the given channel. Channel names must start with "#"

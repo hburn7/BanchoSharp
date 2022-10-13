@@ -3,14 +3,11 @@ using BanchoSharp.Multiplayer;
 
 namespace BanchoSharp.Interfaces;
 
-public interface IMultiplayerLobby
+public interface IMultiplayerLobby : IChatChannel
 {
 	/// <summary>
-	///  The constant name of the multiplayer channel. e.g. #mp_12345
-	/// </summary>
-	public string Channel { get; }
-	/// <summary>
-	///  The current name of the multiplayer lobby
+	/// The name of the multiplayer lobby. e.g. "OWC 2021: (team A) vs. (team B)
+	/// Not to be confused with FullName./>
 	/// </summary>
 	public string Name { get; }
 	/// <summary>

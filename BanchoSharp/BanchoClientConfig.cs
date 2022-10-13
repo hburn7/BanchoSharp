@@ -10,6 +10,12 @@ public class IrcCredentials : IIrcCredentials
 		Password = password;
 	}
 
+	public IrcCredentials()
+	{
+		Username = string.Empty;
+		Password = string.Empty;
+	}
+
 	public string Username { get; }
 	public string Password { get; }
 }
@@ -22,26 +28,29 @@ public class BanchoClientConfig
 	/// </summary>
 	/// <param name="credentials"></param>
 	/// <param name="logLevel"></param>
+	/// <param name="saveMessags">Whether to save a log of the messages in the channels</param>
 	/// <param name="host">Should either be irc.ppy.sh or cho.ppy.sh</param>
 	/// <param name="port">The port to connect to. You probably will never need to change this</param>
 	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
-		string host = "irc.ppy.sh", int port = 6667)
+		bool saveMessags = false, string host = "irc.ppy.sh", int port = 6667)
 	{
 		Credentials = credentials;
+		SaveMessags = saveMessags;
 		Host = host;
 		Port = port;
 
 		Logger.LogLevel = logLevel;
 	}
 
-	public BanchoClientConfig(IrcCredentials credentials, string[]? ignoredCommands,
-		LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667)
-		: this(credentials, logLevel, host, port)
+	public BanchoClientConfig(IIrcCredentials credentials, string[]? ignoredCommands,
+		bool saveMessages = false, LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667)
+		: this(credentials, logLevel, saveMessages, host, port)
 	{
 		IgnoredCommands = ignoredCommands;
 	}
 
 	public IIrcCredentials Credentials { get; }
+	public bool SaveMessags { get; }
 	public string Host { get; }
 	public int Port { get; }
 	public string[]? IgnoredCommands { get; set; } =

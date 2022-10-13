@@ -1,6 +1,7 @@
 using BanchoSharp.EventArgs;
 using BanchoSharp.Exceptions;
 using BanchoSharp.Interfaces;
+using BanchoSharp.Messaging;
 using System.Diagnostics;
 
 namespace BanchoSharp.Multiplayer;
@@ -41,13 +42,13 @@ public class BeatmapShell
 	public GameMode? GameMode { get; }
 }
 
-public class MultiplayerLobby : IMultiplayerLobby
+public class MultiplayerLobby : Channel, IMultiplayerLobby
 {
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
 
-	public MultiplayerLobby(IBanchoClient client, string channel, string name)
+	public MultiplayerLobby(IBanchoClient client, string channel, string name) : base(channel)
 	{
 		if (!channel.StartsWith("#mp_"))
 		{
@@ -56,8 +57,8 @@ public class MultiplayerLobby : IMultiplayerLobby
 
 		_client = client;
 
-		Channel = channel;
 		Name = name;
+		MessageHistory = _client.ClientConfig.SaveMessags ? new Stack<IIrcMessage>() : null;
 		Size = 1;
 		GameMode = GameMode.osu;
 
@@ -110,8 +111,9 @@ public class MultiplayerLobby : IMultiplayerLobby
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
-	public string Channel { get; }
 	public string Name { get; private set; }
+	public Stack<IIrcMessage>? MessageHistory { get; }
+	public DateTime CreatedAt { get; }
 	public string? HistoryUrl { get; private set; }
 	public int Size { get; private set; }
 	public MultiplayerPlayer? Host { get; private set; }
@@ -191,7 +193,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 	{
 		await SendAsync("!mp close");
 		IsClosed = true;
-		_client.Channels.Remove(Channel);
+		_client.Channels.Remove(this);
 		OnClosed?.Invoke();
 	}
 
@@ -226,11 +228,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 		OnMatchStartTimerStarted?.Invoke(seconds);
 	}
 
-	public async Task StartAsync()
-	{
-		await SendAsync("!mp start");
-	}
-
+	public async Task StartAsync() => await SendAsync("!mp start");
 	public async Task KickAsync(string username) => await SendAsync($"!mp kick {username}");
 	public async Task BanAsync(string username) => await SendAsync($"!mp ban {username}");
 
@@ -271,7 +269,7 @@ public class MultiplayerLobby : IMultiplayerLobby
 
 		var trackSettingsMessages = delegate(IPrivateIrcMessage message)
 		{
-			if (message.Sender == "BanchoBot" && message.Recipient == Channel)
+			if (message.Sender == "BanchoBot" && message.Recipient == Name)
 			{
 				UpdateLobbyFromBanchoBotSettingsResponse(message.Content);
 				count++;
@@ -445,5 +443,5 @@ public class MultiplayerLobby : IMultiplayerLobby
 		_ => throw new InvalidOperationException($"Cannot parse game mode {gm}")
 	};
 
-	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {Channel} {command}");
+	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {FullName} {command}");
 }
