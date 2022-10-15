@@ -119,5 +119,7 @@ public interface IBanchoClient
 	/// <param name="isPrivate">Whether the multiplayer lobby is private</param>
 	/// <returns></returns>
 	public Task MakeTournamentLobbyAsync(string name, bool isPrivate = false);
+
+	public IChatChannel? GetChannel(string fullName);
 	//todo: add commands like make, makeprivate, etc.
 }

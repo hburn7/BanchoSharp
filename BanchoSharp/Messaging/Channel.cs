@@ -20,4 +20,6 @@ public class Channel : IChatChannel
 		MessageHistory = new Stack<IIrcMessage>();
 		CreatedAt = DateTime.Now;
 	}
+
+	public override string ToString() => FullName;
 }

@@ -28,11 +28,12 @@ public class BanchoClientConfig
 	/// </summary>
 	/// <param name="credentials"></param>
 	/// <param name="logLevel"></param>
-	/// <param name="saveMessags">Whether to save a log of the messages in the channels</param>
+	/// <param name="saveMessags">Whether to save a log of the messages in the channels (in memory).
+	/// This is required to be true if you need to recall any messages via the channel's MessageHistory parameter.</param>
 	/// <param name="host">Should either be irc.ppy.sh or cho.ppy.sh</param>
 	/// <param name="port">The port to connect to. You probably will never need to change this</param>
 	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
-		bool saveMessags = false, string host = "irc.ppy.sh", int port = 6667)
+		bool saveMessags = true, string host = "irc.ppy.sh", int port = 6667)
 	{
 		Credentials = credentials;
 		SaveMessags = saveMessags;
@@ -43,7 +44,7 @@ public class BanchoClientConfig
 	}
 
 	public BanchoClientConfig(IIrcCredentials credentials, string[]? ignoredCommands,
-		bool saveMessages = false, LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667)
+		bool saveMessages = true, LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667)
 		: this(credentials, logLevel, saveMessages, host, port)
 	{
 		IgnoredCommands = ignoredCommands;

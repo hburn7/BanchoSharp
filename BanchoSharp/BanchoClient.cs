@@ -97,7 +97,7 @@ public class BanchoClient : IBanchoClient
 			Logger.Warn($"Requested removal of channel {name} but a match was not found in the channels list.");
 			return;
 		}
-		
+
 		Channels.Remove(channel);
 		OnChannelParted?.Invoke(channel);
 	}
@@ -121,6 +121,8 @@ public class BanchoClient : IBanchoClient
 
 		// todo: join the channel sent by banchobot
 	}
+
+	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.FullName == fullName);
 
 	private void RegisterEvents()
 	{
@@ -150,11 +152,12 @@ public class BanchoClient : IBanchoClient
 			{
 				Channels.Remove(match);
 			}
+
 			Logger.Info($"Failed to connect to channel {name}");
 		};
 
-		OnAuthenticated += () => this.IsAuthenticated = true;
-		OnDisconnected += () => this.IsAuthenticated = false;
+		OnAuthenticated += () => IsAuthenticated = true;
+		OnDisconnected += () => IsAuthenticated = false;
 	}
 
 	/// <summary>
