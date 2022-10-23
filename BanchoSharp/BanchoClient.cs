@@ -61,6 +61,7 @@ public class BanchoClient : IBanchoClient
 		await Execute($"PASS {ClientConfig.Credentials.Password}");
 		await Execute($"NICK {ClientConfig.Credentials.Username}");
 		await Execute($"USER {ClientConfig.Credentials.Username}");
+		await ListenerAsync();
 	}
 
 	public async Task DisconnectAsync()
@@ -188,7 +189,7 @@ public class BanchoClient : IBanchoClient
 		OnDeploy?.Invoke(message);
 	}
 
-	public async Task ListenerAsync()
+	private async Task ListenerAsync()
 	{
 		while (IsConnected)
 		{
@@ -224,7 +225,7 @@ public class BanchoClient : IBanchoClient
 
 			if (message.Command == "PRIVMSG")
 			{
-				message = new PrivateIrcMessage(line);
+				message = new PrivateIrcMessage(line, ClientConfig.Credentials.Username);
 			}
 
 			OnMessageReceived?.Invoke(message);
