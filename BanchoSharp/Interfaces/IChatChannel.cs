@@ -10,7 +10,7 @@ public interface IChatChannel
 	/// An optional stack of messages, pushed as they come in.
 	/// Null if the client is configured to not save message history.
 	/// </summary>
-	public Stack<IIrcMessage>? MessageHistory { get; }
+	public LinkedList<IIrcMessage>? MessageHistory { get; }
 	/// <summary>
 	/// The point in time at which this channel was created
 	/// </summary>
