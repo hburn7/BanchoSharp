@@ -61,8 +61,6 @@ public class BanchoClient : IBanchoClient
 		await Execute($"PASS {ClientConfig.Credentials.Password}");
 		await Execute($"NICK {ClientConfig.Credentials.Username}");
 		await Execute($"USER {ClientConfig.Credentials.Username}");
-
-		await ListenerAsync();
 	}
 
 	public async Task DisconnectAsync()
@@ -83,6 +81,12 @@ public class BanchoClient : IBanchoClient
 	{
 		await Execute($"JOIN {name}");
 		var channel = new Channel(name);
+
+		if (Channels.Contains(channel))
+		{
+			return;
+		}
+		
 		Channels.Add(channel);
 		OnChannelJoined?.Invoke(channel);
 	}
@@ -131,7 +135,16 @@ public class BanchoClient : IBanchoClient
 		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
 		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
 		OnMessageReceived += m => Logger.Debug($"Message received: {m}");
-		OnDeploy += s => Logger.Debug($"Deployed message to osu!Bancho: {s}");
+		OnDeploy += s =>
+		{
+			if (s.StartsWith("PASS"))
+			{
+				// Conceal password
+				s = "PASS ********";
+			}
+			
+			Logger.Debug($"Deployed message to osu!Bancho: {s}");
+		};
 		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Querying {u}");
@@ -175,7 +188,7 @@ public class BanchoClient : IBanchoClient
 		OnDeploy?.Invoke(message);
 	}
 
-	private async Task ListenerAsync()
+	public async Task ListenerAsync()
 	{
 		while (IsConnected)
 		{
@@ -191,8 +204,6 @@ public class BanchoClient : IBanchoClient
 			{
 				continue;
 			}
-
-			Logger.Debug(line);
 
 			if (!IsAuthenticated)
 			{
