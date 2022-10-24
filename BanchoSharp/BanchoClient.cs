@@ -22,7 +22,13 @@ public class BanchoClient : IBanchoClient
 		ClientConfig = clientConfig;
 		RegisterEvents();
 	}
+	
+	public BanchoClient()
+	{
+		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+	}
 #pragma warning restore CS8618
+	
 	public BanchoClientConfig ClientConfig { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -183,6 +189,11 @@ public class BanchoClient : IBanchoClient
 		if (!IsConnected)
 		{
 			throw new IrcClientNotConnectedException();
+		}
+
+		if (!IsAuthenticated)
+		{
+			throw new IrcClientNotAuthenticatedException();
 		}
 
 		await _writer!.WriteLineAsync(message);
