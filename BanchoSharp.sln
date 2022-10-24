@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharp", "BanchoSharp\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharpTest", "BanchoSharpTest\BanchoSharpTest.csproj", "{B8A18928-05F4-4502-82A8-8953F83DF32C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharpTests", "BanchoSharpTests\BanchoSharpTests.csproj", "{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{B8A18928-05F4-4502-82A8-8953F83DF32C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8A18928-05F4-4502-82A8-8953F83DF32C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8A18928-05F4-4502-82A8-8953F83DF32C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
