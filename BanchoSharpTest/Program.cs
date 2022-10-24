@@ -12,4 +12,3 @@ client.OnAuthenticated += async () =>
 };
 
 await client.ConnectAsync();
-await client.ListenerAsync();
