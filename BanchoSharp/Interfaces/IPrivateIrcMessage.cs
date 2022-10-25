@@ -18,4 +18,8 @@ public interface IPrivateIrcMessage : IIrcMessage
 	/// Whether the message is direct and private between users
 	/// </summary>
 	public bool IsDirect { get; }
+	/// <summary>
+	/// Whether the message is from BanchoBot
+	/// </summary>
+	public bool IsBanchoBotMessage { get; }
 }

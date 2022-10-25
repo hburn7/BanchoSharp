@@ -53,6 +53,10 @@ public interface IBanchoClient
 	/// Fired when a query is called on a user
 	/// </summary>
 	public event Action<string> OnUserQueried;
+	/// <summary>
+	/// Fired whenever notification is received from BanchoBot that a multiplayer lobby has been created
+	/// </summary>
+	public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public BanchoClientConfig ClientConfig { get; }
 	/// <summary>
 	/// A list of channels that the client is currently connected to

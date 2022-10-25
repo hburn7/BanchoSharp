@@ -17,12 +17,14 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 		}
 
 		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(username, StringComparison.OrdinalIgnoreCase);
+		IsBanchoBotMessage = IsDirect && Sender == "BanchoBot";
 	}
 
 	public string Sender { get; }
 	public string Content { get; }
 	public string Recipient { get; }
 	public bool IsDirect { get; }
+	public bool IsBanchoBotMessage { get; }
 
 	/// <summary>
 	/// Creates an <see cref="IPrivateIrcMessage"/> from basic parameters.

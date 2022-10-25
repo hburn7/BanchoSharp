@@ -28,7 +28,7 @@ public class BanchoClient : IBanchoClient
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
 	}
 #pragma warning restore CS8618
-	
+	public event Action<IMultiplayerLobby>? OnMultiplayerLobbyCreated;
 	public BanchoClientConfig ClientConfig { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -178,6 +178,17 @@ public class BanchoClient : IBanchoClient
 
 		OnAuthenticated += () => IsAuthenticated = true;
 		OnDisconnected += () => IsAuthenticated = false;
+		
+		// BanchoBot notifications
+		OnPrivateMessageReceived += m =>
+		{
+			var checker = new BanchoBotChecks(this);
+			// #mp_id
+			if (checker.IsTournamentCreation(m) is {} lobby)
+			{
+				OnMultiplayerLobbyCreated?.Invoke(lobby);
+			}
+		};
 	}
 
 	/// <summary>
@@ -191,7 +202,9 @@ public class BanchoClient : IBanchoClient
 			throw new IrcClientNotConnectedException();
 		}
 
-		if (!IsAuthenticated)
+		bool bypassAuth() => message.StartsWith("NICK") || message.StartsWith("PASS") || message.StartsWith("USER");
+
+		if (!IsAuthenticated && !bypassAuth())
 		{
 			throw new IrcClientNotAuthenticatedException();
 		}
