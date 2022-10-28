@@ -4,6 +4,19 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>BanchoSharp</Title>
+        <Authors>StageCodes</Authors>
+        <Description>IRC communication library for osu!, written in C#</Description>
+        <Copyright>StageCodes</Copyright>
+        <PackageProjectUrl>https://github.com/hburn7/BanchoSharp</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/hburn7/BanchoSharp</RepositoryUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageVersion>1.0.1</PackageVersion>
     </PropertyGroup>
+    
+    <ItemGroup>
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
+    </ItemGroup>
 
 </Project>
