@@ -1,0 +1,53 @@
+name: Release
+
+# Run on every commit tag which begins with "v"
+on:
+  push:
+    branches:
+    - master
+    tags:
+      - "v*"
+
+# Automatically create a GitHub Release with details from previous commits
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+  deploy-binaries:
+    name: "Deploy binaries"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.x
+      - name: Install dependencies
+        run: dotnet restore "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj"
+      - name: Build
+        run: dotnet build "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj" --configuration Release --no-restore
+      - name: Test
+        run: dotnet test "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj" --no-restore --verbosity normal
+      - name: Publish
+        run: |
+          dotnet publish "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj" -c Release -o BanchoSharp
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: banchosharp-artifacts
+          path: BanchoSharp/**
+          if-no-files-found: error
+          retention-days: 90
+      
+      - name: Publish to NuGet on version change
+        id: publish_nuget
+        uses: tedd/publish-nuget-neo@v1
+        with:
+          NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
+          PROJECT_FILE_PATH: $"${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj"
