@@ -47,8 +47,8 @@ jobs:
       
       - name: Publish to NuGet on version change
         id: publish_nuget
-        uses: tedd/publish-nuget-neo@v1
+        uses: brandedoutcast/publish-nuget@v2.5.2
         with:
           NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
           PROJECT_FILE_PATH: BanchoSharp/BanchoSharp.csproj
-          VERSION_REGEX: "[0-9]+.[0-9]+.[0-9]+"
+          VERSION_REGEX: "<PackageVersion>(.*)<\/PackageVersion>"
