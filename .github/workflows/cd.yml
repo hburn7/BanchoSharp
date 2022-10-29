@@ -50,5 +50,6 @@ jobs:
         uses: brandedoutcast/publish-nuget@v2.5.2
         with:
           NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
-          PROJECT_FILE_PATH: BanchoSharp/BanchoSharp.csproj
+          PROJECT_FILE_PATH: "BanchoSharp/BanchoSharp.csproj"
           VERSION_REGEX: "<PackageVersion>(.*)<\/PackageVersion>"
+          TAG_COMMIT: false
