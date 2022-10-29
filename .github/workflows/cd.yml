@@ -51,3 +51,4 @@ jobs:
         with:
           NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
           PROJECT_FILE_PATH: BanchoSharp/BanchoSharp.csproj
+          VERSION_REGEX: [v|V].*
