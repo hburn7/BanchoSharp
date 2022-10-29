@@ -1,6 +1,3 @@
-using BanchoSharp;
-using BanchoSharp.Exceptions;
-
 namespace BanchoSharpTests;
 
 public class ExceptionTests
@@ -46,6 +43,31 @@ public class ExceptionTests
 		{
 			Assert.That(client.IsConnected);
 			Assert.Throws<IrcClientNotAuthenticatedException>(() => { client.SendAsync("Test").GetAwaiter().GetResult(); });
+		}
+	}
+
+	[Test]
+	public void TestExceptionBypassOnSend()
+	{
+		BanchoClient client = new();
+		try
+		{
+			client.ConnectAsync().GetAwaiter().GetResult();
+		}
+		catch
+		{
+			// ignored
+		}
+		finally
+		{
+			Assert.That(client.IsConnected);
+		
+			Assert.DoesNotThrowAsync(async () =>
+			{
+				await client.SendAsync("PASS test");
+				await client.SendAsync("NICK test");
+				await client.SendAsync("USER test");
+			});
 		}
 	}
 }
