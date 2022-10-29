@@ -46,8 +46,9 @@ jobs:
           retention-days: 90
       
       - name: Publish to NuGet on version change
-        id: publish_nuget
-        uses: tedd/publish-nuget-neo@v1
-        with:
+        searchFor: 'outdated'
+        versionToSelect: 'latest'
+        includePrerelease: true
+        directory: "${{ github.workspace }}/BanchoSharp"
           NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
           PROJECT_FILE_PATH: BanchoSharp/BanchoSharp.csproj
