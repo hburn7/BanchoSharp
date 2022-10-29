@@ -37,13 +37,14 @@ jobs:
         run: |
           dotnet publish "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj" -c Release -o BanchoSharp
 
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: banchosharp-artifacts
-          path: BanchoSharp/**
-          if-no-files-found: error
-          retention-days: 90
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: "${{ github.workspace }}/BanchoSharp/BanchoSharp.dll"
+          asset_name: BanchoSharp.dll
+          tag: ${{ github.ref }}
+          overwrite: true
       
       - name: Publish to NuGet on version change
         id: publish_nuget
