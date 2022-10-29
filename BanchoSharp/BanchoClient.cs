@@ -28,7 +28,7 @@ public class BanchoClient : IBanchoClient
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
 	}
 #pragma warning restore CS8618
-	public event Action<IMultiplayerLobby>? OnMultiplayerLobbyCreated;
+	public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public BanchoClientConfig ClientConfig { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -183,12 +183,16 @@ public class BanchoClient : IBanchoClient
 		OnPrivateMessageReceived += m =>
 		{
 			var checker = new BanchoBotChecks(this);
+			
 			// #mp_id
 			if (checker.IsTournamentCreation(m) is {} lobby)
 			{
 				OnMultiplayerLobbyCreated?.Invoke(lobby);
 			}
 		};
+
+		OnMultiplayerLobbyCreated += lobby => { Logger.Debug($"Multiplayer lobby created: {lobby.FullName} ({lobby.Name})"); };
+
 	}
 
 	/// <summary>
