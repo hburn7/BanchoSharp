@@ -44,7 +44,6 @@ jobs:
           path: BanchoSharp/**
           if-no-files-found: error
           retention-days: 90
-      
       - name: Publish to NuGet on version change
         searchFor: 'outdated'
         versionToSelect: 'latest'
