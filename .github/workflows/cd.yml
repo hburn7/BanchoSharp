@@ -3,8 +3,6 @@ name: Release
 # Run on every commit tag which begins with "v"
 on:
   push:
-    branches:
-    - master
     tags:
       - "v*"
 
