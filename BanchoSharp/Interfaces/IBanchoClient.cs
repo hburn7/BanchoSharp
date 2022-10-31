@@ -1,5 +1,10 @@
 namespace BanchoSharp.Interfaces;
 
+/// <summary>
+/// A client used to connect with osu!Bancho. Provides a number of notifications in the form
+/// of events. Subscribe to any event to execute a function whenever they occur. There cannot be
+/// more than 4 simultaneous connections to osu!Bancho at any point, even on different clients.
+/// </summary>
 public interface IBanchoClient
 {
 	/// <summary>

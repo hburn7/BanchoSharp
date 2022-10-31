@@ -20,18 +20,8 @@ public class IrcCredentials : IIrcCredentials
 	public string Password { get; set; }
 }
 
-public class BanchoClientConfig
+public class BanchoClientConfig : IBanchoClientConfig
 {
-	/// <summary>
-	/// Constructs the configuration that is used by the BanchoClient. Defaults to
-	/// ignoring QUIT, PART, JOIN, MODE, PING and some other more spammy commands sent by the server.
-	/// </summary>
-	/// <param name="credentials"></param>
-	/// <param name="logLevel"></param>
-	/// <param name="saveMessags">Whether to save a log of the messages in the channels (in memory).
-	/// This is required to be true if you need to recall any messages via the channel's MessageHistory parameter.</param>
-	/// <param name="host">Should either be irc.ppy.sh or cho.ppy.sh</param>
-	/// <param name="port">The port to connect to. You probably will never need to change this</param>
 	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
 		bool saveMessags = true, string host = "irc.ppy.sh", int port = 6667)
 	{
