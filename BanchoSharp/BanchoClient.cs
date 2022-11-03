@@ -23,13 +23,7 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
 		ClientConfig = clientConfig;
-		RegisterEvents();
-	}
-	
-	public BanchoClient()
-	{
-		ClientConfig = new BanchoClientConfig(new IrcCredentials());
-
+		
 		if (ClientConfig.IgnoredCommands != null)
 		{
 			_ignoredCommands = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +36,12 @@ public class BanchoClient : IBanchoClient
 			}
 		}
 		
+		RegisterEvents();
+	}
+	
+	public BanchoClient()
+	{
+		ClientConfig = new BanchoClientConfig(new IrcCredentials());
 	}
 #pragma warning restore CS8618
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
