@@ -11,6 +11,9 @@ public class BanchoClient : IBanchoClient
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
+
+	private readonly Dictionary<string, bool> _ignoredCommands;
+
 	/// <summary>
 	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
 	///  to osu!Bancho's IRC server.
@@ -26,6 +29,19 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient()
 	{
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+
+		if (ClientConfig.IgnoredCommands != null)
+		{
+			_ignoredCommands = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+			foreach (string cmd in ClientConfig.IgnoredCommands)
+			{
+				if (!_ignoredCommands.ContainsKey(cmd))
+				{
+					_ignoredCommands.Add(cmd, true);
+				}
+			}
+		}
+		
 	}
 #pragma warning restore CS8618
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
@@ -229,7 +245,7 @@ public class BanchoClient : IBanchoClient
 			}
 
 			IIrcMessage message = new IrcMessage(line);
-			if (ClientConfig.IgnoredCommands?.Any(x => x.ToString().Equals(message.Command)) ?? false)
+			if (_ignoredCommands.ContainsKey(message.Command))
 			{
 				continue;
 			}
