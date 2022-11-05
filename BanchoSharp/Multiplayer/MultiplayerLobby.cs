@@ -43,7 +43,7 @@ public class BeatmapShell
 }
 
 /// <summary>
-/// Note: This class is untested and is not officially supported yet.
+///  Note: This class is untested and is not officially supported yet.
 /// </summary>
 public class MultiplayerLobby : Channel, IMultiplayerLobby
 {
@@ -88,16 +88,14 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			ResetMatchTimer();
 		};
 
-		OnPlayerJoined += player =>
-		{
-			Players.Add(player);
-		};
+		OnPlayerJoined += player => { Players.Add(player); };
 
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
 
 		Task.Run(TimerWatcher).GetAwaiter().GetResult();
 	}
 
+	public Stack<IIrcMessage>? MessageHistory { get; }
 	public event Action? OnSettingsUpdated;
 	public event Action<int>? OnLobbyTimerStarted;
 	public event Action? OnLobbyTimerFinished;
@@ -115,7 +113,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
 	public string Name { get; private set; }
-	public Stack<IIrcMessage>? MessageHistory { get; }
 	public DateTime CreatedAt { get; }
 	public string? HistoryUrl { get; private set; }
 	public int Size { get; private set; }
@@ -264,6 +261,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
 
+	// Untested
 	public async Task UpdateAsync()
 	{
 		int count = 0;
@@ -412,7 +410,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			var player = FindPlayer(name);
 			int previousSlot = player!.Slot;
 			player!.Slot = slotNum;
-			
+
 			OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
 		}
 	}
