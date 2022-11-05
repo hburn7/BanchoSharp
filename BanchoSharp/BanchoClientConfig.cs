@@ -46,6 +46,6 @@ public class BanchoClientConfig : IBanchoClientConfig
 	public int Port { get; }
 	public string[]? IgnoredCommands { get; set; } =
 	{
-		"QUIT", "PART", "JOIN", "MODE", "PING", "366", "353", "333"
+		"QUIT", "PART", "JOIN", "MODE", "366", "353", "333"
 	};
 }
