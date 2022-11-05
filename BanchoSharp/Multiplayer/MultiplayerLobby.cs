@@ -42,6 +42,9 @@ public class BeatmapShell
 	public GameMode? GameMode { get; }
 }
 
+/// <summary>
+/// Note: This class is untested and is not officially supported yet.
+/// </summary>
 public class MultiplayerLobby : Channel, IMultiplayerLobby
 {
 	private readonly IBanchoClient _client;
