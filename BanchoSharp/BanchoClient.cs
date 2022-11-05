@@ -8,43 +8,12 @@ namespace BanchoSharp;
 
 public class BanchoClient : IBanchoClient
 {
+	private readonly Dictionary<string, bool> _ignoredCommands;
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
-
-	private readonly Dictionary<string, bool> _ignoredCommands;
-
-	/// <summary>
-	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
-	///  to osu!Bancho's IRC server.
-	/// </summary>
-	/// <param name="clientConfig"></param>
-#pragma warning disable CS8618
-	public BanchoClient(BanchoClientConfig clientConfig)
-	{
-		ClientConfig = clientConfig;
-		
-		if (ClientConfig.IgnoredCommands != null)
-		{
-			_ignoredCommands = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-			foreach (string cmd in ClientConfig.IgnoredCommands)
-			{
-				if (!_ignoredCommands.ContainsKey(cmd))
-				{
-					_ignoredCommands.Add(cmd, true);
-				}
-			}
-		}
-		
-		RegisterEvents();
-	}
-	
-	public BanchoClient()
-	{
-		ClientConfig = new BanchoClientConfig(new IrcCredentials());
-	}
-#pragma warning restore CS8618
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
+	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -109,7 +78,7 @@ public class BanchoClient : IBanchoClient
 		{
 			return;
 		}
-		
+
 		Channels.Add(channel);
 		OnChannelJoined?.Invoke(channel);
 	}
@@ -157,7 +126,6 @@ public class BanchoClient : IBanchoClient
 		OnDisconnected += () => Logger.Info("Client disconnected");
 		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
 		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
-		OnMessageReceived += m => Logger.Debug($"Message received: {m}");
 		OnDeploy += s =>
 		{
 			if (s.StartsWith("PASS"))
@@ -165,19 +133,29 @@ public class BanchoClient : IBanchoClient
 				// Conceal password
 				s = "PASS ********";
 			}
-			
+
 			Logger.Debug($"Deployed message to osu!Bancho: {s}");
 		};
+
 		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Querying {u}");
 
-		OnMessageReceived += m =>
+		OnMessageReceived += async m =>
 		{
+			Logger.Debug($"Message received: {m}");
+
 			if (m.Command == "403")
 			{
 				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
 				OnChannelJoinFailure?.Invoke(failedChannel);
+			}
+			else if (m.Command == "PING")
+			{
+				Logger.Trace("Ping received");
+				await Execute("PONG");
+				Logger.Trace("Pong dispatched");
+				OnPingReceived?.Invoke();
 			}
 		};
 
@@ -194,7 +172,7 @@ public class BanchoClient : IBanchoClient
 
 		OnAuthenticated += () => IsAuthenticated = true;
 		OnDisconnected += () => IsAuthenticated = false;
-		
+
 		// BanchoBot notifications
 		// OnPrivateMessageReceived += m =>
 		// {
@@ -208,7 +186,6 @@ public class BanchoClient : IBanchoClient
 		// };
 
 		// OnMultiplayerLobbyCreated += lobby => { Logger.Debug($"Multiplayer lobby created: {lobby.FullName} ({lobby.Name})"); };
-
 	}
 
 	/// <summary>
@@ -287,20 +264,30 @@ public class BanchoClient : IBanchoClient
 	}
 
 	/// <summary>
-	///  Performs various automations, such as joining new tournament channels
-	///  upon receiving notification of their creation. Assumes messages
-	///  are sent by BanchoBot
+	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
+	///  to osu!Bancho's IRC server.
 	/// </summary>
-	/// <param name="message"></param>
-	private async Task ProcessBanchoBotResponseAsync(string message)
+	/// <param name="clientConfig"></param>
+#pragma warning disable CS8618
+	public BanchoClient(BanchoClientConfig clientConfig)
 	{
-		if (message.StartsWith("Created the tournament match "))
+		ClientConfig = clientConfig;
+
+		if (ClientConfig.IgnoredCommands != null)
 		{
-			string[] splits = message.Split();
-			string url = splits[4];
-			int subStart = url.LastIndexOf('/');
-			int id = int.Parse(url[(subStart + 1)..]);
-			await JoinChannelAsync($"#mp_{id}");
+			_ignoredCommands = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+			foreach (string cmd in ClientConfig.IgnoredCommands)
+			{
+				if (!_ignoredCommands.ContainsKey(cmd))
+				{
+					_ignoredCommands.Add(cmd, true);
+				}
+			}
 		}
+
+		RegisterEvents();
 	}
+
+	public BanchoClient() { ClientConfig = new BanchoClientConfig(new IrcCredentials()); }
+#pragma warning restore CS8618
 }
