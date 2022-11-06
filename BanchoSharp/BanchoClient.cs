@@ -8,6 +8,10 @@ namespace BanchoSharp;
 
 public class BanchoClient : IBanchoClient
 {
+	/// <summary>
+	///  Invoker interface responsible for processing messages sent by BanchoBot.
+	/// </summary>
+	private readonly IBanchoBotEventInvoker _banchoBotEventInvoker;
 	private readonly Dictionary<string, bool> _ignoredCommands;
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
@@ -15,11 +19,13 @@ public class BanchoClient : IBanchoClient
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; }
+	public IBanchoBotEvents BanchoBotEvents { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
 	public event Action OnAuthenticated;
 	public event Action OnAuthenticationFailed;
 	public event Action<IIrcMessage> OnMessageReceived;
+	public event Action<IPrivateIrcMessage>? OnPrivateMessageSent;
 	public event Action<IPrivateIrcMessage> OnPrivateMessageReceived;
 	public event Action<IPrivateIrcMessage> OnAuthenticatedUserDMReceived;
 	public event Action<string> OnDeploy;
@@ -67,7 +73,14 @@ public class BanchoClient : IBanchoClient
 	}
 
 	public async Task SendAsync(string message) => await Execute(message);
-	public async Task SendPrivateMessageAsync(string destination, string content) => await Execute($"PRIVMSG {destination} {content}");
+
+	public async Task SendPrivateMessageAsync(string destination, string content)
+	{
+		await Execute($"PRIVMSG {destination} {content}");
+		var priv = PrivateIrcMessage.CreateFromParameters(ClientConfig.Credentials.Username, destination, content);
+		Channels.FirstOrDefault(x => x.ChannelName.Equals(destination, StringComparison.OrdinalIgnoreCase))?.MessageHistory?.AddLast(priv);
+		OnPrivateMessageSent?.Invoke(priv);
+	}
 
 	public async Task JoinChannelAsync(string name)
 	{
@@ -144,6 +157,11 @@ public class BanchoClient : IBanchoClient
 		OnMessageReceived += async m =>
 		{
 			Logger.Debug($"Message received: {m}");
+
+			if (m is IPrivateIrcMessage { IsBanchoBotMessage: true } priv)
+			{
+				_banchoBotEventInvoker.ProcessMessage(priv);
+			}
 
 			if (m.Command == "403")
 			{
@@ -273,6 +291,8 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
 		ClientConfig = clientConfig;
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
 		if (ClientConfig.IgnoredCommands != null)
 		{

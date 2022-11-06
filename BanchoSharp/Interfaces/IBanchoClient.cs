@@ -7,11 +7,12 @@ namespace BanchoSharp.Interfaces;
 /// </summary>
 public interface IBanchoClient
 {
-	/// <summary>
-	///  Fired whenever notification is received from BanchoBot that a multiplayer lobby has been created
-	/// </summary>
-	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public BanchoClientConfig ClientConfig { get; }
+	/// <summary>
+	/// Interface responsible for the processing of all events related to BanchoBot. Subscribe to this
+	/// interface's events for anything related to BanchoBot.
+	/// </summary>
+	public IBanchoBotEvents BanchoBotEvents { get; }
 	/// <summary>
 	///  A list of channels that the client is currently connected to
 	/// </summary>
@@ -45,6 +46,7 @@ public interface IBanchoClient
 	///  Fired whenever a message is received by the client
 	/// </summary>
 	public event Action<IIrcMessage> OnMessageReceived;
+	public event Action<IPrivateIrcMessage> OnPrivateMessageSent;
 	/// <summary>
 	///  Fired whenever a PrivateMessage is received. Private messages
 	///  are not always private. Any chat sent between users or to any public chat
