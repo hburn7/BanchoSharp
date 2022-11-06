@@ -86,7 +86,7 @@ public class BanchoClient : IBanchoClient
 	public async Task PartChannelAsync(string name)
 	{
 		await Execute($"PART {name}");
-		var channel = Channels.FirstOrDefault(x => x.FullName == name);
+		var channel = Channels.FirstOrDefault(x => x.ChannelName == name);
 
 		if (channel == null)
 		{
@@ -107,7 +107,7 @@ public class BanchoClient : IBanchoClient
 
 	public async Task MakeTournamentLobbyAsync(string name, bool isPrivate = false)
 	{
-		if (!Channels.Any(x => x.FullName == "BanchoBot"))
+		if (!Channels.Any(x => x.ChannelName == "BanchoBot"))
 		{
 			await JoinChannelAsync("BanchoBot");
 		}
@@ -118,7 +118,7 @@ public class BanchoClient : IBanchoClient
 		// todo: join the channel sent by banchobot
 	}
 
-	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.FullName == fullName);
+	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName == fullName);
 
 	private void RegisterEvents()
 	{
@@ -161,7 +161,7 @@ public class BanchoClient : IBanchoClient
 
 		OnChannelJoinFailure += name =>
 		{
-			var match = Channels.FirstOrDefault(x => x.FullName == name);
+			var match = Channels.FirstOrDefault(x => x.ChannelName == name);
 			if (match != null)
 			{
 				Channels.Remove(match);
@@ -196,7 +196,8 @@ public class BanchoClient : IBanchoClient
 	{
 		if (!IsConnected)
 		{
-			throw new IrcClientNotConnectedException();
+			Logger.Error($"IRC client not connected, failed to execute {message}");
+			return;
 		}
 
 		bool bypassAuth() => message.StartsWith("NICK") || message.StartsWith("PASS") || message.StartsWith("USER");

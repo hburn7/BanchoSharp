@@ -4,7 +4,7 @@ namespace BanchoSharp.Messaging;
 
 public class Channel : IChatChannel
 {
-	public string FullName { get; }
+	public string ChannelName { get; }
 	public LinkedList<IIrcMessage>? MessageHistory { get; }
 	public DateTime CreatedAt { get; }
 
@@ -16,10 +16,10 @@ public class Channel : IChatChannel
 	/// Can also be the name of a user.</param>
 	public Channel(string fullName)
 	{
-		FullName = fullName;
+		ChannelName = fullName;
 		MessageHistory = new LinkedList<IIrcMessage>();
 		CreatedAt = DateTime.Now;
 	}
 
-	public override string ToString() => FullName;
+	public override string ToString() => ChannelName;
 }
