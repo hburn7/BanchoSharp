@@ -12,20 +12,10 @@ public class ExceptionTests
 		Assert.Multiple(() =>
 		{
 			Assert.That(!client.IsConnected);
-			Assert.Throws<IrcClientNotConnectedException>(() =>
+			Assert.DoesNotThrow(() =>
 			{
 				client.SendAsync("test").GetAwaiter().GetResult();
 			});
-		});
-	}
-
-	[Test]
-	public void TestNotAuthenticatedExceptionOnConnection()
-	{
-		BanchoClient client = new();
-		Assert.Throws<IrcClientNotAuthenticatedException>(() =>
-		{
-			client.ConnectAsync().GetAwaiter().GetResult();
 		});
 	}
 
