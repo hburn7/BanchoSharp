@@ -5,7 +5,7 @@ public interface IChatChannel
 	/// <summary>
 	/// The full name of the channel as known by the server
 	/// </summary>
-	public string FullName { get; }
+	public string ChannelName { get; }
 	/// <summary>
 	/// An optional stack of messages, pushed as they come in.
 	/// Null if the client is configured to not save message history.
