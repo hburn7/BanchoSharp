@@ -17,7 +17,7 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 		}
 
 		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(username, StringComparison.OrdinalIgnoreCase);
-		IsBanchoBotMessage = IsDirect && Sender == "BanchoBot";
+		IsBanchoBotMessage = Sender == "BanchoBot";
 	}
 
 	public string Sender { get; }
@@ -36,6 +36,6 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 	/// <param name="content">The message's content</param>
 	/// <param name="username">The username of the logged in user</param>
 	/// <returns>Fully loaded <see cref="IPrivateIrcMessage"/></returns>
-	public static IPrivateIrcMessage CreateFromParameters(string sender, string recipient, string content, string username) =>
-		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}", username);
+	public static IPrivateIrcMessage CreateFromParameters(string sender, string recipient, string content) =>
+		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}", sender);
 }
