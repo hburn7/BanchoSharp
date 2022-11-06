@@ -51,17 +51,13 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
 
-	public MultiplayerLobby(IBanchoClient client, string channel, string name) : base(channel)
+	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}")
 	{
-		if (!channel.StartsWith("#mp_"))
-		{
-			throw new IrcException("Multiplayer lobby channels must start with #mp_");
-		}
-
 		_client = client;
 
+		Id = id;
 		Name = name;
-		MessageHistory = _client.ClientConfig.SaveMessags ? new Stack<IIrcMessage>() : null;
+		HistoryUrl = $"https://osu.ppy.sh/mp/{id}";
 		Size = 1;
 		GameMode = GameMode.osu;
 
@@ -70,7 +66,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		_client.OnMessageReceived += m =>
 		{
-			if (m is IPrivateIrcMessage { Sender: "BanchoBot" } pm && pm.Recipient == channel)
+			if (m is IPrivateIrcMessage { Sender: "BanchoBot" } pm && pm.Recipient == ChannelName)
 			{
 				UpdateLobbyFromBanchoBotSettingsResponse(pm.Content);
 			}
@@ -92,10 +88,9 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
 
-		Task.Run(TimerWatcher).GetAwaiter().GetResult();
+		// Task.Run(TimerWatcher).GetAwaiter().GetResult();
 	}
 
-	public Stack<IIrcMessage>? MessageHistory { get; }
 	public event Action? OnSettingsUpdated;
 	public event Action<int>? OnLobbyTimerStarted;
 	public event Action? OnLobbyTimerFinished;
@@ -112,8 +107,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
+	public long Id { get; }
 	public string Name { get; private set; }
-	public DateTime CreatedAt { get; }
 	public string? HistoryUrl { get; private set; }
 	public int Size { get; private set; }
 	public MultiplayerPlayer? Host { get; private set; }
@@ -298,23 +293,23 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		OnSettingsUpdated?.Invoke();
 	}
 
-	private Task TimerWatcher()
-	{
-		while (true)
-		{
-			if (_lobbyTimerEnd != null && _lobbyTimerEnd < DateTime.Now)
-			{
-				OnLobbyTimerFinished?.Invoke();
-				_lobbyTimerEnd = null;
-			}
-
-			if (_matchTimerEnd != null && _matchTimerEnd < DateTime.Now)
-			{
-				OnMatchStartTimerFinished?.Invoke();
-				_matchTimerEnd = null;
-			}
-		}
-	}
+	// private Task TimerWatcher()
+	// {
+	// 	while (true)
+	// 	{
+	// 		if (_lobbyTimerEnd != null && _lobbyTimerEnd < DateTime.Now)
+	// 		{
+	// 			OnLobbyTimerFinished?.Invoke();
+	// 			_lobbyTimerEnd = null;
+	// 		}
+	//
+	// 		if (_matchTimerEnd != null && _matchTimerEnd < DateTime.Now)
+	// 		{
+	// 			OnMatchStartTimerFinished?.Invoke();
+	// 			_matchTimerEnd = null;
+	// 		}
+	// 	}
+	// }
 
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
@@ -444,5 +439,5 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		_ => throw new InvalidOperationException($"Cannot parse game mode {gm}")
 	};
 
-	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {FullName} {command}");
+	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {ChannelName} {command}");
 }
