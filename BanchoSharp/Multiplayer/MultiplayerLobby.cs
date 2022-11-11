@@ -257,43 +257,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
 
-	// Untested
-	public async Task UpdateAsync()
-	{
-		int count = 0;
-		var sw = new Stopwatch();
-		sw.Start();
-
-		var trackSettingsMessages = delegate(IPrivateIrcMessage message)
-		{
-			if (message.Sender == "BanchoBot" && message.Recipient == Name)
-			{
-				UpdateLobbyFromBanchoBotSettingsResponse(message.Content);
-				count++;
-			}
-		};
-
-		_client.OnMessageReceived += m =>
-		{
-			if (m is IPrivateIrcMessage dm)
-			{
-				trackSettingsMessages(dm);
-			}
-		};
-
-		while (count < 3 && sw.ElapsedMilliseconds < 10000)
-		{
-			await Task.Delay(25);
-		}
-
-		if (sw.ElapsedMilliseconds >= 10000)
-		{
-			Logger.Warn("Multiplayer settings update watcher timed out");
-		}
-
-		OnSettingsUpdated?.Invoke();
-	}
-
 	// private Task TimerWatcher()
 	// {
 	// 	while (true)

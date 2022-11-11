@@ -89,11 +89,4 @@ public interface IMultiplayerLobby : IChatChannel
 	public Task RemoveRefereesAsync(params string[] usernames);
 	public Task SetMapAsync(BeatmapShell beatmap);
 	public Task SendHelpMessageAsync();
-
-	/// <summary>
-	///  Updates this object's properties based on what is currently
-	///  set in the multplayer lobby
-	/// </summary>
-	/// <returns></returns>
-	public Task UpdateAsync();
 }
