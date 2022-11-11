@@ -50,6 +50,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
+	private int _playersRemainingCount = 0;
 
 	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}")
 	{
@@ -407,6 +408,72 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			player!.Slot = slotNum;
 
 			OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+		}
+		else if (banchoBotResponse.StartsWith("Players: "))
+		{
+			var playerCount = int.Parse(banchoBotResponse.Split("Players: ")[1]);
+
+			if (playerCount == 0)
+			{
+				// The "Players: <count>" should only come after a !mp settings request, so if we've gotten this, 
+				// and the count is 0, the "!mp settings" should have finished.
+
+				OnSettingsUpdated?.Invoke();
+			}
+			else
+			{
+				_playersRemainingCount = playerCount;
+			}
+		}
+		else if (banchoBotResponse.StartsWith("Slot "))
+		{
+			var slot = int.Parse((banchoBotResponse[..8].Where(c => char.IsDigit(c)).ToArray()));
+			var state = banchoBotResponse.Substring(8, 10).TrimEnd();
+
+			// Find the first ' ' after the URL, since the URL is not padded with any spaces.
+			var playerNameBegin = banchoBotResponse.IndexOf(' ', banchoBotResponse.IndexOf("/u/")) + 1;
+
+			var url = banchoBotResponse[18..(playerNameBegin - 1)];
+			var name = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
+			var info = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
+
+			var player = FindPlayer(name);
+
+			if (player is null)
+			{
+				OnPlayerJoined?.Invoke(new MultiplayerPlayer(name, slot, TeamColor.None));
+			}
+			else
+			{
+				if (player.Slot != slot)
+				{
+					var previousSlot = player.Slot;
+
+					player.Slot = slot;
+
+					OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
+				}
+			}
+
+			if (--_playersRemainingCount == 0)
+			{
+				OnSettingsUpdated?.Invoke();
+			}
+		}
+		else if (banchoBotResponse.StartsWith("Changed match host to "))
+		{
+			var hostPlayerName = banchoBotResponse.Split("Changed match host to ")[1];
+			var prevHostName = Host?.Name;
+
+			Host = FindPlayer(hostPlayerName);
+
+			if (Host is not null)
+			{
+				if (Host.Name != prevHostName)
+				{
+					OnHostChanged?.Invoke(Host);
+				}
+			}
 		}
 	}
 
