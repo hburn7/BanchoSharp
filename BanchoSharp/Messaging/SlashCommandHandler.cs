@@ -63,6 +63,7 @@ public class SlashCommandHandler : ISlashCommandHandler
 		"part" => GetFirstArgOrDefault(),
 		"me" => GetAllAsStringOrDefault(),
 		"ignore" => GetFirstArgOrDefault(),
+		"unignore" => GetFirstArgOrDefault(), // Not tested, I do not know if /unignore works. It's here just in case.
 		"away" => GetAllAsStringOrDefault(),
 		"query" => GetFirstArgOrDefault(),
 		_ => Array.Empty<string>()
