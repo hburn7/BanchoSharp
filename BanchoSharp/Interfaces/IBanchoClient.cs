@@ -7,7 +7,7 @@ namespace BanchoSharp.Interfaces;
 /// </summary>
 public interface IBanchoClient
 {
-	public BanchoClientConfig ClientConfig { get; }
+	public BanchoClientConfig ClientConfig { get; set; }
 	/// <summary>
 	/// Interface responsible for the processing of all events related to BanchoBot. Subscribe to this
 	/// interface's events for anything related to BanchoBot.

@@ -18,7 +18,7 @@ public class BanchoClient : IBanchoClient
 	private StreamWriter? _writer;
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public event Action? OnPingReceived;
-	public BanchoClientConfig ClientConfig { get; }
+	public BanchoClientConfig ClientConfig { get; set; }
 	public IBanchoBotEvents BanchoBotEvents { get; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
@@ -161,6 +161,25 @@ public class BanchoClient : IBanchoClient
 			if (m is IPrivateIrcMessage { IsBanchoBotMessage: true } priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
+				LinkedList<IIrcMessage>? messageHistory;
+				if (priv.IsDirect)
+				{
+					messageHistory = GetChannel(priv.Sender)?.MessageHistory;
+				}
+				else
+				{
+					messageHistory = GetChannel(priv.Recipient)?.MessageHistory;
+				}
+
+				if (messageHistory == null)
+				{
+					Logger.Warn($"Failed to append to MessageHistory for {priv}");
+				}
+				else
+				{
+					messageHistory.AddLast(priv);
+				}
+				
 			}
 
 			if (m.Command == "403")
@@ -241,7 +260,7 @@ public class BanchoClient : IBanchoClient
 			}
 
 			IIrcMessage message = new IrcMessage(line);
-			if (_ignoredCommands.ContainsKey(message.Command))
+			if (_ignoredCommands?.ContainsKey(message.Command) ?? false)
 			{
 				continue;
 			}
@@ -288,11 +307,9 @@ public class BanchoClient : IBanchoClient
 	/// </summary>
 	/// <param name="clientConfig"></param>
 #pragma warning disable CS8618
-	public BanchoClient(BanchoClientConfig clientConfig)
+	public BanchoClient(BanchoClientConfig clientConfig) : this()
 	{
 		ClientConfig = clientConfig;
-		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
-		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
 		if (ClientConfig.IgnoredCommands != null)
 		{
@@ -306,9 +323,16 @@ public class BanchoClient : IBanchoClient
 			}
 		}
 
-		RegisterEvents();
 	}
 
-	public BanchoClient() { ClientConfig = new BanchoClientConfig(new IrcCredentials()); }
+	public BanchoClient()
+	{
+		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
+
+		RegisterEvents();
+	}
 #pragma warning restore CS8618
 }
