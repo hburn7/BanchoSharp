@@ -8,18 +8,18 @@ namespace BanchoSharp;
 
 public class BanchoClient : IBanchoClient
 {
+	private readonly Dictionary<string, bool> _ignoredCommands;
 	/// <summary>
 	///  Invoker interface responsible for processing messages sent by BanchoBot.
 	/// </summary>
-	private readonly IBanchoBotEventInvoker _banchoBotEventInvoker;
-	private readonly Dictionary<string, bool> _ignoredCommands;
+	private IBanchoBotEventInvoker _banchoBotEventInvoker;
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
-	public IBanchoBotEvents BanchoBotEvents { get; }
+	public IBanchoBotEvents BanchoBotEvents { get; private set; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
 	public event Action OnAuthenticated;
@@ -133,6 +133,12 @@ public class BanchoClient : IBanchoClient
 
 	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName == fullName);
 
+	private void RegisterInvokers()
+	{
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
+	}
+
 	private void RegisterEvents()
 	{
 		OnConnected += () => Logger.Info("Client connected");
@@ -180,7 +186,6 @@ public class BanchoClient : IBanchoClient
 				{
 					messageHistory.AddLast(priv);
 				}
-				
 			}
 
 			if (m.Command == "403")
@@ -323,10 +328,8 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 		}
-		
-		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
-		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
+		RegisterInvokers();
 		RegisterEvents();
 	}
 
@@ -337,6 +340,7 @@ public class BanchoClient : IBanchoClient
 		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
 		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
+		RegisterInvokers();
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
