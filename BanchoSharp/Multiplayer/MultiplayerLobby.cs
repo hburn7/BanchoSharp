@@ -126,6 +126,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public GameMode GameMode { get; private set; }
 	public List<MultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
+	public Mods Mods { get; private set; } = Mods.None;
 
 	public async Task UpdateSettingsAsync(LobbyFormat? format, WinCondition? winCondition, GameMode? gameMode)
 	{
@@ -390,13 +391,12 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (banchoBotResponse.StartsWith("Slot "))
 		{
+			// Find the digit(s) within the first 8 characters
 			var slot = int.Parse((banchoBotResponse[..8].Where(c => char.IsDigit(c)).ToArray()));
-			var state = banchoBotResponse.Substring(8, 10).TrimEnd();
 
 			// Find the first ' ' after the URL, since the URL is not padded with any spaces.
 			var playerNameBegin = banchoBotResponse.IndexOf(' ', banchoBotResponse.IndexOf("/u/")) + 1;
 
-			var url = banchoBotResponse[18..(playerNameBegin - 1)];
 			var name = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
 			var info = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
 
@@ -405,6 +405,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			if (player is null)
 			{
 				OnPlayerJoined?.Invoke(new MultiplayerPlayer(name, slot, TeamColor.None));
+
+				player = FindPlayer(name);
 			}
 			else
 			{
@@ -418,6 +420,74 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				}
 			}
 
+			if (info != null && player is not null)
+			{
+				// Just finding words in this string feels like an easier approach at the moment, since the string provided
+				// by bancho seems to be using both '/' and ',' as a separator at the same time, and I don't see any
+				// benefits with working that out right now.
+				
+				if (info.Contains("Host"))
+				{
+					var prevHostName = Host?.Name;
+
+					Host = player;
+
+					if (Host is not null)
+					{
+						if (Host.Name != prevHostName)
+						{
+							OnHostChanged?.Invoke(Host);
+						}
+					}
+				}
+				
+				if (info.Contains("Team "))
+				{
+					var prevTeam = player.Team;
+
+					if (info.Contains("Team Blue") && player.Team != TeamColor.Blue)
+					{
+						player.Team = TeamColor.Blue;
+						
+						OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(player, prevTeam));
+					}
+					
+					if (info.Contains("Team Red") && player.Team != TeamColor.Red)
+					{
+						player.Team = TeamColor.Red;
+						
+						OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(player, prevTeam));
+					}
+				}
+				
+				// Only attempt to find player mods if Freemod is enabled
+				if ((Mods & Mods.Freemod) != 0)
+				{
+					player.Mods = Mods.None;	
+					
+					// Since all mods should be correctly named directly within the enum, we should just
+					// be able to match strings here.
+					foreach (Mods mod in Enum.GetValues(typeof(Mods)))
+					{
+						if (mod == Mods.None) continue;
+
+						var modName = Enum.GetName(typeof(Mods), mod);
+
+						if (modName == null) continue;
+					
+						if (info.Contains(modName))
+						{
+							player.Mods |= mod;
+						}
+					}
+				}
+				else
+				{
+					// Otherwise just apply the room mods to the player
+					player.Mods = Mods;
+				}
+			}
+			
 			if (--_playersRemainingCount == 0)
 			{
 				OnSettingsUpdated?.Invoke();
@@ -437,6 +507,48 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 					OnHostChanged?.Invoke(Host);
 				}
 			}
+		}
+		else if (banchoBotResponse.StartsWith("Active mods: ") || banchoBotResponse.EndsWith(", disabled FreeMod")) // This part is a little messy
+		{
+			if (banchoBotResponse.StartsWith("Disabled all mods,"))
+			{
+				Mods = Mods.Freemod;
+			}
+			else
+			{
+				var modList = "";
+			
+				if (banchoBotResponse.EndsWith(", disabled FreeMod"))
+					modList = banchoBotResponse.Split(", disabled FreeMod")[0].Trim().Substring(8);
+				else
+					modList = banchoBotResponse.Split("Active mods: ")[1].Trim();
+			
+				var mods = modList.Split(',').ToList();
+
+				if (!mods.Any())
+					mods.Add(modList);
+
+				Mods = Mods.None;
+
+				foreach (var modStr in mods)
+				{
+					if (Enum.TryParse(modStr, out Mods mod))
+					{
+						Mods |= mod;
+					}
+					else
+					{
+						Logger.Warn($"Failed to parse mod called: {modStr}");
+					}
+				}
+			
+				Logger.Debug($"Parsed room mods as {Mods.ToShortString()}");
+			}
+		}
+		else if (banchoBotResponse.EndsWith(", enabled FreeMod"))
+		{
+			// At this point no other mods could be turned on "by default"
+			Mods = Mods.Freemod;
 		}
 	}
 

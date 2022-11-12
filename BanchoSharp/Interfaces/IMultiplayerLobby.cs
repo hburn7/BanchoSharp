@@ -39,6 +39,7 @@ public interface IMultiplayerLobby : IChatChannel
 	public GameMode GameMode { get; }
 	public List<MultiplayerPlayer> Players { get; }
 	public List<string> Referees { get; }
+	public Mods Mods { get; }
 	public event Action OnSettingsUpdated;
 	public event Action<int> OnLobbyTimerStarted;
 	public event Action OnLobbyTimerFinished;
