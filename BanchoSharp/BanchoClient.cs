@@ -165,7 +165,7 @@ public class BanchoClient : IBanchoClient
 		{
 			Logger.Debug($"Message received: {m}");
 
-			if (m is IPrivateIrcMessage { IsBanchoBotMessage: true } priv)
+			if (m is IPrivateIrcMessage priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
 				LinkedList<IIrcMessage>? messageHistory;
