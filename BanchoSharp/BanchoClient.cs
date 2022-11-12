@@ -215,20 +215,6 @@ public class BanchoClient : IBanchoClient
 
 		OnAuthenticated += () => IsAuthenticated = true;
 		OnDisconnected += () => IsAuthenticated = false;
-
-		// BanchoBot notifications
-		// OnPrivateMessageReceived += m =>
-		// {
-		// 	var checker = new BanchoBotChecks(this);
-		// 	
-		// 	// #mp_id
-		// 	if (checker.IsTournamentCreation(m) is {} lobby)
-		// 	{
-		// 		OnMultiplayerLobbyCreated?.Invoke(lobby);
-		// 	}
-		// };
-
-		// OnMultiplayerLobbyCreated += lobby => { Logger.Debug($"Multiplayer lobby created: {lobby.FullName} ({lobby.Name})"); };
 	}
 
 	/// <summary>
