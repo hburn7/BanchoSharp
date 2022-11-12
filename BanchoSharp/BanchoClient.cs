@@ -87,7 +87,7 @@ public class BanchoClient : IBanchoClient
 		await Execute($"JOIN {name}");
 		var channel = new Channel(name);
 
-		if (Channels.Contains(channel))
+		if (Channels.Any(x => x.ChannelName.Equals(channel.ChannelName, StringComparison.OrdinalIgnoreCase)))
 		{
 			return;
 		}
@@ -114,6 +114,12 @@ public class BanchoClient : IBanchoClient
 	public async Task QueryUserAsync(string user)
 	{
 		await Execute($"QUERY {user}");
+
+		if (Channels.Any(x => x.ChannelName.Equals(user, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+		
 		Channels.Add(new Channel(user));
 		OnUserQueried?.Invoke(user);
 	}
@@ -142,7 +148,12 @@ public class BanchoClient : IBanchoClient
 	private void RegisterEvents()
 	{
 		OnConnected += () => Logger.Info("Client connected");
-		OnDisconnected += () => Logger.Info("Client disconnected");
+		OnDisconnected += () =>
+		{
+			Logger.Info("Client disconnected, disposing.");
+			Dispose();
+			Logger.Info("Client disposed.");
+		};
 		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
 		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
 		OnDeploy += s =>
@@ -330,4 +341,26 @@ public class BanchoClient : IBanchoClient
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
+	protected virtual void Dispose(bool disposing)
+	{
+		// In the event we inherit from this class, if necessary, this would be overridden
+		// and further resources should be disposed.
+		if (disposing)
+		{
+			_reader?.Dispose();
+			_tcp?.Dispose();
+			_writer?.Dispose();
+
+			if (IsConnected)
+			{
+				DisconnectAsync().GetAwaiter().GetResult();
+			}
+		}
+	}
+
+	public void Dispose()
+	{
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
 }

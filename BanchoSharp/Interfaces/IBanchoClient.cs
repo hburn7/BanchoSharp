@@ -5,7 +5,7 @@ namespace BanchoSharp.Interfaces;
 ///  of events. Subscribe to any event to execute a function whenever they occur. There cannot be
 ///  more than 4 simultaneous connections to osu!Bancho at any point, even on different clients.
 /// </summary>
-public interface IBanchoClient
+public interface IBanchoClient : IDisposable
 {
 	public BanchoClientConfig ClientConfig { get; set; }
 	/// <summary>
