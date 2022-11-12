@@ -390,21 +390,25 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (banchoBotResponse.StartsWith("Slot "))
 		{
+			// Sample string: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
+			
+			// Find the digit(s) within the first 8 characters, which is the slot number
 			var slot = int.Parse((banchoBotResponse[..8].Where(c => char.IsDigit(c)).ToArray()));
-			var state = banchoBotResponse.Substring(8, 10).TrimEnd();
 
 			// Find the first ' ' after the URL, since the URL is not padded with any spaces.
 			var playerNameBegin = banchoBotResponse.IndexOf(' ', banchoBotResponse.IndexOf("/u/")) + 1;
+			
+			var playerName = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
+			
+			// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
+			// character player name bit.
+			var playerInfo = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
 
-			var url = banchoBotResponse[18..(playerNameBegin - 1)];
-			var name = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
-			var info = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
-
-			var player = FindPlayer(name);
+			var player = FindPlayer(playerName);
 
 			if (player is null)
 			{
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(name, slot, TeamColor.None));
+				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot, TeamColor.None));
 			}
 			else
 			{
@@ -418,7 +422,12 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				}
 			}
 
-			if (--_playersRemainingCount == 0)
+			// Subtract the players remaining counter for each "slot" message we receive,
+			// so we can invoke OnSettingsUpdated() once the counter reaches 0, 
+			// which is the last message bancho will send us after "!mp settings"
+			_playersRemainingCount--;
+
+			if (_playersRemainingCount == 0)
 			{
 				OnSettingsUpdated?.Invoke();
 			}
