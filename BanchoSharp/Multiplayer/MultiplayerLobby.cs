@@ -541,14 +541,26 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 						Logger.Warn($"Failed to parse mod called: {modStr}");
 					}
 				}
-			
-				Logger.Debug($"Parsed room mods as {Mods.ToShortString()}");
 			}
 		}
 		else if (banchoBotResponse.EndsWith(", enabled FreeMod"))
 		{
 			// At this point no other mods could be turned on "by default"
 			Mods = Mods.Freemod;
+		}
+		else if (banchoBotResponse.Contains("finished playing (Score: "))
+		{
+			var playerName = banchoBotResponse[..banchoBotResponse.IndexOf(" finished playing (Score: ")];
+			var player = FindPlayer(playerName);
+
+			if (player is not null)
+			{
+				var resultStr = banchoBotResponse[(banchoBotResponse.IndexOf(" finished playing (Score: ") + 26)..];
+				var score = int.Parse(resultStr.Split(',')[0]);
+
+				player.Score = score;
+				player.Passed = resultStr.Contains("PASSED");
+			}
 		}
 	}
 
