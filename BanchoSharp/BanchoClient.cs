@@ -150,9 +150,10 @@ public class BanchoClient : IBanchoClient
 			Logger.Debug($"Deployed message to osu!Bancho: {s}");
 		};
 
+		OnChannelJoined += c => Logger.Info($"Joining channel {c}");
 		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
 		OnChannelParted += c => Logger.Info($"Parted {c}");
-		OnUserQueried += u => Logger.Info($"Querying {u}");
+		OnUserQueried += u => Logger.Info($"Queried {u}");
 
 		OnMessageReceived += async m =>
 		{
@@ -305,9 +306,9 @@ public class BanchoClient : IBanchoClient
 	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
 	///  to osu!Bancho's IRC server.
 	/// </summary>
-	/// <param name="clientConfig"></param>
+	/// <param name="clientConfig">The configuration of this client</param>
 #pragma warning disable CS8618
-	public BanchoClient(BanchoClientConfig clientConfig) : this()
+	public BanchoClient(BanchoClientConfig clientConfig)
 	{
 		ClientConfig = clientConfig;
 
@@ -322,7 +323,11 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 		}
+		
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
+		RegisterEvents();
 	}
 
 	public BanchoClient()
