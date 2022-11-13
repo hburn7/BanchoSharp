@@ -50,6 +50,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
+	private int _playersRemainingCount = 0;
 
 	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}")
 	{
@@ -256,43 +257,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
 
-	// Untested
-	public async Task UpdateAsync()
-	{
-		int count = 0;
-		var sw = new Stopwatch();
-		sw.Start();
-
-		var trackSettingsMessages = delegate(IPrivateIrcMessage message)
-		{
-			if (message.Sender == "BanchoBot" && message.Recipient == Name)
-			{
-				UpdateLobbyFromBanchoBotSettingsResponse(message.Content);
-				count++;
-			}
-		};
-
-		_client.OnMessageReceived += m =>
-		{
-			if (m is IPrivateIrcMessage dm)
-			{
-				trackSettingsMessages(dm);
-			}
-		};
-
-		while (count < 3 && sw.ElapsedMilliseconds < 10000)
-		{
-			await Task.Delay(25);
-		}
-
-		if (sw.ElapsedMilliseconds >= 10000)
-		{
-			Logger.Warn("Multiplayer settings update watcher timed out");
-		}
-
-		OnSettingsUpdated?.Invoke();
-	}
-
 	// private Task TimerWatcher()
 	// {
 	// 	while (true)
@@ -407,6 +371,81 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			player!.Slot = slotNum;
 
 			OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+		}
+		else if (banchoBotResponse.StartsWith("Players: "))
+		{
+			var playerCount = int.Parse(banchoBotResponse.Split("Players: ")[1]);
+
+			if (playerCount == 0)
+			{
+				// The "Players: <count>" should only come after a !mp settings request, so if we've gotten this, 
+				// and the count is 0, the "!mp settings" should have finished.
+
+				OnSettingsUpdated?.Invoke();
+			}
+			else
+			{
+				_playersRemainingCount = playerCount;
+			}
+		}
+		else if (banchoBotResponse.StartsWith("Slot "))
+		{
+			// Sample string: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
+			
+			// Find the digit(s) within the first 8 characters, which is the slot number
+			var slot = int.Parse((banchoBotResponse[..8].Where(c => char.IsDigit(c)).ToArray()));
+
+			// Find the first ' ' after the URL, since the URL is not padded with any spaces.
+			var playerNameBegin = banchoBotResponse.IndexOf(' ', banchoBotResponse.IndexOf("/u/")) + 1;
+			
+			var playerName = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
+			
+			// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
+			// character player name bit.
+			var playerInfo = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
+
+			var player = FindPlayer(playerName);
+
+			if (player is null)
+			{
+				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot, TeamColor.None));
+			}
+			else
+			{
+				if (player.Slot != slot)
+				{
+					var previousSlot = player.Slot;
+
+					player.Slot = slot;
+
+					OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
+				}
+			}
+
+			// Subtract the players remaining counter for each "slot" message we receive,
+			// so we can invoke OnSettingsUpdated() once the counter reaches 0, 
+			// which is the last message bancho will send us after "!mp settings"
+			_playersRemainingCount--;
+
+			if (_playersRemainingCount == 0)
+			{
+				OnSettingsUpdated?.Invoke();
+			}
+		}
+		else if (banchoBotResponse.StartsWith("Changed match host to "))
+		{
+			var hostPlayerName = banchoBotResponse.Split("Changed match host to ")[1];
+			var prevHostName = Host?.Name;
+
+			Host = FindPlayer(hostPlayerName);
+
+			if (Host is not null)
+			{
+				if (Host.Name != prevHostName)
+				{
+					OnHostChanged?.Invoke(Host);
+				}
+			}
 		}
 	}
 
