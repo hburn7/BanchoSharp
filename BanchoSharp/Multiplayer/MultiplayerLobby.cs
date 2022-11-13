@@ -1,8 +1,6 @@
 using BanchoSharp.EventArgs;
-using BanchoSharp.Exceptions;
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
-using System.Diagnostics;
 
 namespace BanchoSharp.Multiplayer;
 
@@ -50,7 +48,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
 	private DateTime? _matchTimerEnd;
-	private int _playersRemainingCount = 0;
+	private int _playersRemainingCount;
 
 	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}")
 	{
@@ -274,179 +272,88 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	// 		}
 	// 	}
 	// }
-
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
-	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoBotResponse)
+	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoResponse)
 	{
-		if (banchoBotResponse.StartsWith("Room name: "))
+		if (IsRoomNameNotification(banchoResponse))
 		{
-			// Process room name and history
-
-			// Index of where the multiplayer lobby name begins
-			int index = banchoBotResponse.LastIndexOf(',');
-			string nameSub = banchoBotResponse[..index];
-			string name = nameSub.Split(':')[1].Trim();
-
-			string historySub = banchoBotResponse[(index + 1)..];
-			string history = historySub.Substring(historySub.IndexOf(':') + 2);
-
-			Name = name;
-			HistoryUrl = history;
+			UpdateNameHistory(banchoResponse);
 		}
-		else if (banchoBotResponse.StartsWith("Team mode: "))
+		else if (IsTeamModeNotification(banchoResponse))
 		{
-			// Update team mode and win condition
-
-			// Index of where the team mode string begins
-			int index = banchoBotResponse.LastIndexOf(',');
-
-			string winConditionSub = banchoBotResponse[(index + 1)..];
-			string winCondition = winConditionSub.Split(':')[1].Trim();
-
-			string formatSub = banchoBotResponse[..index];
-			string format = formatSub.Split(':')[1].Trim();
-
-			WinCondition = ParseWinCondition(winCondition);
-			Format = ParseFormat(format);
+			UpdateFormatWincondition(banchoResponse);
 		}
-		else if (banchoBotResponse.Equals("Host is changing map..."))
+		else if (IsHostChangingMapNotification(banchoResponse))
 		{
 			HostIsChangingMap = true;
 			OnHostChangingMap?.Invoke();
 		}
-		else if (banchoBotResponse.StartsWith("Beatmap changed to: "))
+		else if (IsBeatmapChangedNotification(banchoResponse))
 		{
-			HostIsChangingMap = false;
-
-			int lastSlashIdx = banchoBotResponse.LastIndexOf('/');
-			string idSub = banchoBotResponse[(lastSlashIdx + 1)..^1];
-
-			OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), GameMode));
+			UpdateHostChangedBeatmap(banchoResponse);
 		}
-		else if (banchoBotResponse.StartsWith("Changed match host to "))
+		else if (IsPlayerJoinedInSlotNotification(banchoResponse))
 		{
-			string host = banchoBotResponse.Split("Changed match host to ")[1];
-			Host = FindPlayer(host);
+			UpdatePlayerJoinedInSlot(banchoResponse);
 		}
-		else if (banchoBotResponse.Contains(" joined in slot "))
-		{
-			if (banchoBotResponse.Contains("for team"))
-			{
-				string[] splits = banchoBotResponse.Split(" joined in slot ");
-				string playerName = splits[0];
-				int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
-				string team = banchoBotResponse.Split(" for team ")[1][..^1];
-				var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum, color));
-			}
-			else
-			{
-				string[] splits = banchoBotResponse.Split(" joined in slot ");
-				string playerName = splits[0];
-				int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
-			}
-		}
-		else if (banchoBotResponse.Equals("Started the match"))
+		else if (IsMatchStartedNotification(banchoResponse))
 		{
 			OnMatchStarted?.Invoke();
 			MatchInProgress = true;
 		}
-		else if (banchoBotResponse.Equals("The match has finished!"))
+		else if (IsMatchFinishedNotification(banchoResponse))
 		{
 			OnMatchFinished?.Invoke();
 			MatchInProgress = false;
 		}
-		else if (banchoBotResponse.Contains("moved to slot"))
+		else if (IsPlayerMovedToSlotNotification(banchoResponse))
 		{
-			string[] splits = banchoBotResponse.Split(" moved to slot ");
-			string name = splits[0].Trim();
-			string slot = splits[1].Trim();
-			int slotNum = int.Parse(slot);
-
-			var player = FindPlayer(name);
-			int previousSlot = player!.Slot;
-			player!.Slot = slotNum;
-
-			OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+			UpdatePlayerSlotMove(banchoResponse);
 		}
-		else if (banchoBotResponse.StartsWith("Players: "))
+		else if (IsPlayersNotification(banchoResponse))
 		{
-			var playerCount = int.Parse(banchoBotResponse.Split("Players: ")[1]);
-
-			if (playerCount == 0)
-			{
-				// The "Players: <count>" should only come after a !mp settings request, so if we've gotten this, 
-				// and the count is 0, the "!mp settings" should have finished.
-
-				OnSettingsUpdated?.Invoke();
-			}
-			else
-			{
-				_playersRemainingCount = playerCount;
-			}
+			UpdatePlayersRemaining(banchoResponse);
 		}
-		else if (banchoBotResponse.StartsWith("Slot "))
+		else if (IsSlotStatusNotification(banchoResponse))
 		{
-			// Sample string: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
-			
-			// Find the digit(s) within the first 8 characters, which is the slot number
-			var slot = int.Parse((banchoBotResponse[..8].Where(c => char.IsDigit(c)).ToArray()));
-
-			// Find the first ' ' after the URL, since the URL is not padded with any spaces.
-			var playerNameBegin = banchoBotResponse.IndexOf(' ', banchoBotResponse.IndexOf("/u/")) + 1;
-			
-			var playerName = banchoBotResponse.Substring(playerNameBegin, 16).TrimEnd();
-			
-			// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
-			// character player name bit.
-			var playerInfo = banchoBotResponse.Length > (playerNameBegin + 16) ? banchoBotResponse[(playerNameBegin + 16)..] : null;
-
-			var player = FindPlayer(playerName);
-
-			if (player is null)
-			{
-				OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot, TeamColor.None));
-			}
-			else
-			{
-				if (player.Slot != slot)
-				{
-					var previousSlot = player.Slot;
-
-					player.Slot = slot;
-
-					OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
-				}
-			}
-
-			// Subtract the players remaining counter for each "slot" message we receive,
-			// so we can invoke OnSettingsUpdated() once the counter reaches 0, 
-			// which is the last message bancho will send us after "!mp settings"
-			_playersRemainingCount--;
-
-			if (_playersRemainingCount == 0)
-			{
-				OnSettingsUpdated?.Invoke();
-			}
+			UpdatePlayerInformation(banchoResponse);
 		}
-		else if (banchoBotResponse.StartsWith("Changed match host to "))
+		else if (IsMatchHostChangedNotification(banchoResponse))
 		{
-			var hostPlayerName = banchoBotResponse.Split("Changed match host to ")[1];
-			var prevHostName = Host?.Name;
-
-			Host = FindPlayer(hostPlayerName);
-
-			if (Host is not null)
-			{
-				if (Host.Name != prevHostName)
-				{
-					OnHostChanged?.Invoke(Host);
-				}
-			}
+			UpdateMatchHost(banchoResponse);
 		}
+	}
+
+	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
+	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode: ");
+	private bool IsHostChangingMapNotification(string banchoResponse) => banchoResponse.Equals("Host is changing map...");
+	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to: ");
+	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match host to ");
+	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
+	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("Started the match");
+	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
+	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
+	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players: ");
+
+	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
+	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
+
+	private void UpdateNameHistory(string banchoResponse)
+	{
+		// Process room name and history
+
+		// Index of where the multiplayer lobby name begins
+		int index = banchoResponse.LastIndexOf(',');
+		string nameSub = banchoResponse[..index];
+		string name = nameSub.Split(':')[1].Trim();
+
+		string historySub = banchoResponse[(index + 1)..];
+		string history = historySub.Substring(historySub.IndexOf(':') + 2);
+
+		Name = name;
+		HistoryUrl = history;
 	}
 
 	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x == name);
@@ -479,4 +386,143 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	};
 
 	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {ChannelName} {command}");
+
+#region MultiplayerLobby update methods
+	private void UpdateMatchHost(string banchoResponse)
+	{
+		string hostPlayerName = banchoResponse.Split("Changed match host to ")[1];
+		string? prevHostName = Host?.Name;
+
+		Host = FindPlayer(hostPlayerName);
+
+		if (Host is not null)
+		{
+			if (Host.Name != prevHostName)
+			{
+				OnHostChanged?.Invoke(Host);
+			}
+		}
+	}
+
+	private void UpdatePlayerInformation(string banchoResponse)
+	{
+		// Find the digit(s) within the first 8 characters, which is the slot number
+		int slot = int.Parse(banchoResponse[..8].Where(c => char.IsDigit(c)).ToArray());
+
+		// Find the first ' ' after the URL, since the URL is not padded with any spaces.
+		int playerNameBegin = banchoResponse.IndexOf(' ', banchoResponse.IndexOf("/u/")) + 1;
+
+		string playerName = banchoResponse.Substring(playerNameBegin, 16).TrimEnd();
+
+		// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
+		// character player name bit.
+		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
+
+		var player = FindPlayer(playerName);
+
+		if (player is null)
+		{
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot));
+		}
+		else
+		{
+			if (player.Slot != slot)
+			{
+				int previousSlot = player.Slot;
+
+				player.Slot = slot;
+
+				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
+			}
+		}
+
+		// Subtract the players remaining counter for each "slot" message we receive,
+		// so we can invoke OnSettingsUpdated() once the counter reaches 0, 
+		// which is the last message bancho will send us after "!mp settings"
+		_playersRemainingCount--;
+
+		if (_playersRemainingCount == 0)
+		{
+			OnSettingsUpdated?.Invoke();
+		}
+	}
+
+	private void UpdatePlayersRemaining(string banchoResponse)
+	{
+		int playerCount = int.Parse(banchoResponse.Split("Players: ")[1]);
+
+		if (playerCount == 0)
+		{
+			// The "Players: <count>" should only come after a !mp settings request, so if we've gotten this, 
+			// and the count is 0, the "!mp settings" should have finished.
+
+			OnSettingsUpdated?.Invoke();
+		}
+		else
+		{
+			_playersRemainingCount = playerCount;
+		}
+	}
+
+	private void UpdatePlayerSlotMove(string banchoResponse)
+	{
+		string[] splits = banchoResponse.Split(" moved to slot ");
+		string name = splits[0].Trim();
+		string slot = splits[1].Trim();
+		int slotNum = int.Parse(slot);
+
+		var player = FindPlayer(name);
+		int previousSlot = player!.Slot;
+		player!.Slot = slotNum;
+
+		OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+	}
+
+	private void UpdatePlayerJoinedInSlot(string banchoResponse)
+	{
+		if (banchoResponse.Contains("for team"))
+		{
+			string[] splits = banchoResponse.Split(" joined in slot ");
+			string playerName = splits[0];
+			int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
+			string team = banchoResponse.Split(" for team ")[1][..^1];
+			var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum, color));
+		}
+		else
+		{
+			string[] splits = banchoResponse.Split(" joined in slot ");
+			string playerName = splits[0];
+			int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
+		}
+	}
+
+	private void UpdateHostChangedBeatmap(string banchoResponse)
+	{
+		HostIsChangingMap = false;
+
+		int lastSlashIdx = banchoResponse.LastIndexOf('/');
+		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
+
+		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), GameMode));
+	}
+
+	private void UpdateFormatWincondition(string banchoResponse)
+	{
+		// Update team mode and win condition
+
+		// Index of where the team mode string begins
+		int index = banchoResponse.LastIndexOf(',');
+
+		string winConditionSub = banchoResponse[(index + 1)..];
+		string winCondition = winConditionSub.Split(':')[1].Trim();
+
+		string formatSub = banchoResponse[..index];
+		string format = formatSub.Split(':')[1].Trim();
+
+		WinCondition = ParseWinCondition(winCondition);
+		Format = ParseFormat(format);
+	}
+#endregion
 }
