@@ -16,8 +16,8 @@ public class MultiplayerPlayer
 	// The mods the player is using, these only get updated after "!mp settings" has been ran.
 	public Mods Mods { get; set; }
 
-	public int? Score { get; set; } = null;
-	public bool? Passed { get; set; } = null;
+	public int? Score { get; set; }
+	public bool? Passed { get; set; }
 
 	public MultiplayerPlayer(string name, int slot, TeamColor team = TeamColor.None, Mods mods = Mods.None)
 	{

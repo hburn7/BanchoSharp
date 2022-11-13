@@ -1,5 +1,7 @@
 ﻿namespace BanchoSharp.Multiplayer;
 
+using System.Text;
+
 // It's important that these are named the same way Bancho names them in IRC, 
 // in order for them to get registered correctly.
 [Flags]
@@ -29,47 +31,47 @@ public static class ModsExtensions
     /// <summary>
     /// Returns a string with a shorter format, example: "HDDT"
     /// </summary>
-    public static string ToShortString(this Mods mods, bool showFreemod = true)
+    public static string ToAbbreviatedForm(this Mods mods, bool showFreemod = true)
     {
-        var ret = "";
+        var ret = new StringBuilder(16);
         
         // Just going to keep appending to this string, to get everything
         // in the "right" order. This might not be the cleanest solution, 
         // but I can't think of anything better right now.
 
         if ((mods & Mods.Freemod) != 0 && showFreemod)
-            ret += "FM";        
+            ret.Append("FM");        
         if ((mods & Mods.Relax) != 0)
-            ret += "RX";
+            ret.Append("RX");
         if ((mods & Mods.Autopilot) != 0)
-            ret += "AP";
+            ret.Append("AP");
         if ((mods & Mods.SpunOut) != 0)
-            ret += "SO";
+            ret.Append("SO");
         if ((mods & Mods.Easy) != 0)
-            ret += "EZ";
+            ret.Append("EZ");
         if ((mods & Mods.NoFail) != 0)
-            ret += "NF";
+            ret.Append("NF");
         if ((mods & Mods.Hidden) != 0)
-            ret += "HD";
+            ret.Append("HD");
         if ((mods & Mods.HalfTime) != 0)
-            ret += "HT";
+            ret.Append("HT");
         if ((mods & Mods.DoubleTime) != 0)
-            ret += "DT";
+            ret.Append("DT");
         if ((mods & Mods.Nightcore) != 0)
-            ret += "NC";
+            ret.Append("NC");
         if ((mods & Mods.HardRock) != 0)
-            ret += "HR";
+            ret.Append("HR");
         if ((mods & Mods.SuddenDeath) != 0)
-            ret += "SD";
+            ret.Append("SD");
         if ((mods & Mods.Perfect) != 0)
-            ret += "PF";
+            ret.Append("PF");
         if ((mods & Mods.Flashlight) != 0)
-            ret += "FL";
+            ret.Append("FL");
         
-        if (!ret.Any())
-            ret = "None";
+        if (ret.Length == 0)
+            ret.Append("None");
         
-        return ret;
+        return ret.ToString();
     }
     
 }
