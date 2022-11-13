@@ -86,8 +86,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		OnPlayerJoined += player => { Players.Add(player); };
 
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
-
-		// Task.Run(TimerWatcher).GetAwaiter().GetResult();
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -255,23 +253,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
 
-	// private Task TimerWatcher()
-	// {
-	// 	while (true)
-	// 	{
-	// 		if (_lobbyTimerEnd != null && _lobbyTimerEnd < DateTime.Now)
-	// 		{
-	// 			OnLobbyTimerFinished?.Invoke();
-	// 			_lobbyTimerEnd = null;
-	// 		}
-	//
-	// 		if (_matchTimerEnd != null && _matchTimerEnd < DateTime.Now)
-	// 		{
-	// 			OnMatchStartTimerFinished?.Invoke();
-	// 			_matchTimerEnd = null;
-	// 		}
-	// 	}
-	// }
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
