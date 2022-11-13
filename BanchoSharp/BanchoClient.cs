@@ -8,18 +8,18 @@ namespace BanchoSharp;
 
 public class BanchoClient : IBanchoClient
 {
+	private readonly Dictionary<string, bool> _ignoredCommands;
 	/// <summary>
 	///  Invoker interface responsible for processing messages sent by BanchoBot.
 	/// </summary>
-	private readonly IBanchoBotEventInvoker _banchoBotEventInvoker;
-	private readonly Dictionary<string, bool> _ignoredCommands;
+	private IBanchoBotEventInvoker _banchoBotEventInvoker;
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
 	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public event Action? OnPingReceived;
-	public BanchoClientConfig ClientConfig { get; }
-	public IBanchoBotEvents BanchoBotEvents { get; }
+	public BanchoClientConfig ClientConfig { get; set; }
+	public IBanchoBotEvents BanchoBotEvents { get; private set; }
 	public event Action OnConnected;
 	public event Action OnDisconnected;
 	public event Action OnAuthenticated;
@@ -87,7 +87,7 @@ public class BanchoClient : IBanchoClient
 		await Execute($"JOIN {name}");
 		var channel = new Channel(name);
 
-		if (Channels.Contains(channel))
+		if (Channels.Any(x => x.ChannelName.Equals(channel.ChannelName, StringComparison.OrdinalIgnoreCase)))
 		{
 			return;
 		}
@@ -114,6 +114,12 @@ public class BanchoClient : IBanchoClient
 	public async Task QueryUserAsync(string user)
 	{
 		await Execute($"QUERY {user}");
+
+		if (Channels.Any(x => x.ChannelName.Equals(user, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+		
 		Channels.Add(new Channel(user));
 		OnUserQueried?.Invoke(user);
 	}
@@ -133,10 +139,21 @@ public class BanchoClient : IBanchoClient
 
 	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName == fullName);
 
+	private void RegisterInvokers()
+	{
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
+	}
+
 	private void RegisterEvents()
 	{
 		OnConnected += () => Logger.Info("Client connected");
-		OnDisconnected += () => Logger.Info("Client disconnected");
+		OnDisconnected += () =>
+		{
+			Logger.Info("Client disconnected, disposing.");
+			Dispose();
+			Logger.Info("Client disposed.");
+		};
 		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
 		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
 		OnDeploy += s =>
@@ -150,17 +167,36 @@ public class BanchoClient : IBanchoClient
 			Logger.Debug($"Deployed message to osu!Bancho: {s}");
 		};
 
+		OnChannelJoined += c => Logger.Info($"Joining channel {c}");
 		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
 		OnChannelParted += c => Logger.Info($"Parted {c}");
-		OnUserQueried += u => Logger.Info($"Querying {u}");
+		OnUserQueried += u => Logger.Info($"Queried {u}");
 
 		OnMessageReceived += async m =>
 		{
 			Logger.Debug($"Message received: {m}");
 
-			if (m is IPrivateIrcMessage { IsBanchoBotMessage: true } priv)
+			if (m is IPrivateIrcMessage priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
+				LinkedList<IIrcMessage>? messageHistory;
+				if (priv.IsDirect)
+				{
+					messageHistory = GetChannel(priv.Sender)?.MessageHistory;
+				}
+				else
+				{
+					messageHistory = GetChannel(priv.Recipient)?.MessageHistory;
+				}
+
+				if (messageHistory == null)
+				{
+					Logger.Warn($"Failed to append to MessageHistory for {priv}");
+				}
+				else
+				{
+					messageHistory.AddLast(priv);
+				}
 			}
 
 			if (m.Command == "403")
@@ -190,20 +226,6 @@ public class BanchoClient : IBanchoClient
 
 		OnAuthenticated += () => IsAuthenticated = true;
 		OnDisconnected += () => IsAuthenticated = false;
-
-		// BanchoBot notifications
-		// OnPrivateMessageReceived += m =>
-		// {
-		// 	var checker = new BanchoBotChecks(this);
-		// 	
-		// 	// #mp_id
-		// 	if (checker.IsTournamentCreation(m) is {} lobby)
-		// 	{
-		// 		OnMultiplayerLobbyCreated?.Invoke(lobby);
-		// 	}
-		// };
-
-		// OnMultiplayerLobbyCreated += lobby => { Logger.Debug($"Multiplayer lobby created: {lobby.FullName} ({lobby.Name})"); };
 	}
 
 	/// <summary>
@@ -241,7 +263,7 @@ public class BanchoClient : IBanchoClient
 			}
 
 			IIrcMessage message = new IrcMessage(line);
-			if (_ignoredCommands.ContainsKey(message.Command))
+			if (_ignoredCommands?.ContainsKey(message.Command) ?? false)
 			{
 				continue;
 			}
@@ -286,13 +308,11 @@ public class BanchoClient : IBanchoClient
 	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
 	///  to osu!Bancho's IRC server.
 	/// </summary>
-	/// <param name="clientConfig"></param>
+	/// <param name="clientConfig">The configuration of this client</param>
 #pragma warning disable CS8618
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
 		ClientConfig = clientConfig;
-		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
-		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
 
 		if (ClientConfig.IgnoredCommands != null)
 		{
@@ -306,9 +326,41 @@ public class BanchoClient : IBanchoClient
 			}
 		}
 
+		RegisterInvokers();
 		RegisterEvents();
 	}
 
-	public BanchoClient() { ClientConfig = new BanchoClientConfig(new IrcCredentials()); }
+	public BanchoClient()
+	{
+		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+
+		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
+		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
+
+		RegisterInvokers();
+		RegisterEvents();
+	}
 #pragma warning restore CS8618
+	protected virtual void Dispose(bool disposing)
+	{
+		// In the event we inherit from this class, if necessary, this would be overridden
+		// and further resources should be disposed.
+		if (disposing)
+		{
+			_reader?.Dispose();
+			_tcp?.Dispose();
+			_writer?.Dispose();
+
+			if (IsConnected)
+			{
+				DisconnectAsync().GetAwaiter().GetResult();
+			}
+		}
+	}
+
+	public void Dispose()
+	{
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
 }

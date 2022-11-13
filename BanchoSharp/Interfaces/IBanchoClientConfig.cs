@@ -8,7 +8,7 @@ public interface IBanchoClientConfig
 	/// <summary>
 	/// The credentials for connecting to osu!Bancho
 	/// </summary>
-	public IIrcCredentials Credentials { get; }
+	public IIrcCredentials Credentials { get; set; }
 	/// <summary>
 	/// Whether every channel should have messages saved in memory. This can
 	/// slightly increase memory overhead but is strongly recommended to be left enabled,
