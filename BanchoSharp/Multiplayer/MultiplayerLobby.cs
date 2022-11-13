@@ -306,6 +306,18 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdateMatchHost(banchoResponse);
 		}
+		else if (IsMatchActiveModsNotification(banchoResponse))
+		{
+			UpdateMatchMods(banchoResponse);
+		}
+		else if (IsMatchModsUpdatedNotification(banchoResponse))
+		{
+			UpdateMatchHost(banchoResponse);
+		}
+		else if (IsPlayerFinishedNotification(banchoResponse))
+		{
+			UpdatePlayerResults(banchoResponse);
+		}
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -322,6 +334,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
 
+	private bool IsMatchActiveModsNotification(string banchoResponse) => banchoResponse.StartsWith("Active mods: ");
+	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
+	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
+	
 	private void UpdateNameHistory(string banchoResponse)
 	{
 		// Process room name and history
@@ -576,5 +592,76 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		WinCondition = ParseWinCondition(winCondition);
 		Format = ParseFormat(format);
 	}
-#endregion
+
+	private void UpdateMatchMods(string banchoResponse)
+	{
+		string modList;
+		
+		if (IsMatchModsUpdatedNotification(banchoResponse))
+		{
+			// This notification comes after running "!mp mods <mods>"
+
+			if (banchoResponse.Equals("Disabled all mods, disabled FreeMod"))
+			{
+				Mods = Mods.None;
+				return;
+			}
+
+			if (banchoResponse.Equals("Disabled all mods, enabled FreeMod"))
+			{
+				Mods = Mods.Freemod;
+				return;
+			}
+			
+			// Get the mods part from the response, example: "Enabled Hidden, HardRock, disabled Freemod"
+			modList = banchoResponse.Split(", disabled FreeMod")[0].Trim()[8..];
+		}
+		else
+		{
+			// Otherwise it came after running "!mp settings"
+			
+			modList = banchoResponse.Split("Active mods: ")[1].Trim();
+		}
+		
+		var mods = modList.Split(',').ToList();
+
+		// If only a single mod was selected, there is no ',' separator in the string
+		// so just add it manually
+		if (!mods.Any())
+			mods.Add(modList);
+		
+		Mods = Mods.None;
+
+		foreach (string modStr in mods)
+		{
+			if (Enum.TryParse(modStr, out Mods mod))
+			{
+				Mods |= mod;
+			}
+			else
+			{
+				Logger.Warn($"Failed to parse mod called: {modStr}");
+			}
+		}
+	}
+
+	private void UpdatePlayerResults(string banchoResponse)
+	{
+		// Example input: "Player 1 finished playing (Score: 3818280, PASSED)."
+		
+		// Grab the player name from the beginning of the string
+		string playerName = banchoResponse[..banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal)];
+		var player = FindPlayer(playerName);
+
+		if (player is null) return;
+		
+		// Grab everything after the "(Score: " part, so for example "3818280, PASSED)."
+		string resultStr = banchoResponse[(banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal) + 26)..];
+		
+		int score = int.Parse(resultStr.Split(',')[0]);
+
+		player.Score = score;
+		player.Passed = resultStr.Contains("PASSED");
+	}
+	#endregion
 }
