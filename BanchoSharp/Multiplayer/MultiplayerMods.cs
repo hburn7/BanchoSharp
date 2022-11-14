@@ -20,8 +20,8 @@ public enum Mods
     Hidden = 1 << 9,
     FadeIn = 1 << 10,
     Flashlight = 1 << 11,
-    Relax = 1 << 12,
-    Autopilot = 1 << 13,
+    Autopilot = 1 << 12,
+    Relax = 1 << 13,
     SpunOut = 1 << 14
 }
 

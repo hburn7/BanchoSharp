@@ -496,6 +496,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 					if (modName == null) continue;
 
+					// Bancho calls autopilot for "Relax2" for some reason
+					if (modName == "Autopilot")
+						modName = "Relax2"; 
+
 					if (playerInfo.Contains(modName))
 					{
 						player.Mods |= mod;
@@ -645,6 +649,13 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 			else
 			{
+				// Bancho calls autopilot for "Relax2" for some reason.
+				if (modStr == "Relax2")
+				{
+					Mods |= Mods.Autopilot;
+					continue;
+				}
+				
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
 		}
