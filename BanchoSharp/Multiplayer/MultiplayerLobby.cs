@@ -318,6 +318,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdatePlayerResults(banchoResponse);
 		}
+		else if (IsPlayerLeftNotification(banchoResponse))
+		{
+			UpdatePlayerDisconnect(banchoResponse);
+		}
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -337,6 +341,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchActiveModsNotification(string banchoResponse) => banchoResponse.StartsWith("Active mods: ");
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
+	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
 	
 	private void UpdateNameHistory(string banchoResponse)
 	{
@@ -662,6 +667,20 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		player.Score = score;
 		player.Passed = resultStr.Contains("PASSED");
+	}
+
+	private void UpdatePlayerDisconnect(string banchoResponse)
+	{
+		string playerName = banchoResponse.Split(" left the game")[0];
+
+		var player = FindPlayer(playerName);
+
+		if (player is null)
+		{
+			return;
+		}
+		
+		OnPlayerDisconnected?.Invoke(new PlayerDisconnectedEventArgs(player, DateTime.Now));
 	}
 	#endregion
 }
