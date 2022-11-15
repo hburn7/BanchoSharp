@@ -85,15 +85,6 @@ public class BanchoClient : IBanchoClient
 	public async Task JoinChannelAsync(string name)
 	{
 		await Execute($"JOIN {name}");
-		var channel = new Channel(name);
-
-		if (Channels.Any(x => x.ChannelName.Equals(channel.ChannelName, StringComparison.OrdinalIgnoreCase)))
-		{
-			return;
-		}
-
-		Channels.Add(channel);
-		OnChannelJoined?.Invoke(channel);
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -167,7 +158,7 @@ public class BanchoClient : IBanchoClient
 			Logger.Debug($"Deployed message to osu!Bancho: {s}");
 		};
 
-		OnChannelJoined += c => Logger.Info($"Joining channel {c}");
+		OnChannelJoined += c => Logger.Info($"Joined channel {c}");
 		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Queried {u}");
@@ -199,7 +190,23 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 
-			if (m.Command == "403")
+			if (m.Command == "332")
+			{
+				// sample message: "#mp_105079765 :multiplayer game #4464"
+				string channelNameMessage = m.RawMessage.Split(" :")[0];
+				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.Ordinal)..];
+
+				var channel = new Channel(channelName);
+
+				if (Channels.Any(x => x.ChannelName.Equals(channel.ChannelName, StringComparison.OrdinalIgnoreCase)))
+				{
+					return;
+				}
+
+				Channels.Add(channel);
+				OnChannelJoined?.Invoke(channel);
+			}
+			else if (m.Command == "403")
 			{
 				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
 				OnChannelJoinFailure?.Invoke(failedChannel);
@@ -215,12 +222,6 @@ public class BanchoClient : IBanchoClient
 
 		OnChannelJoinFailure += name =>
 		{
-			var match = Channels.FirstOrDefault(x => x.ChannelName == name);
-			if (match != null)
-			{
-				Channels.Remove(match);
-			}
-
 			Logger.Info($"Failed to connect to channel {name}");
 		};
 

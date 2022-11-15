@@ -7,19 +7,24 @@ public enum TeamColor
 	None
 }
 
-// todo: Track player mods
-
 public class MultiplayerPlayer
 {
 	public string Name { get; }
 	public TeamColor Team { get; set; }
 	public int Slot { get; set; }
+	
+	// The mods the player is using, these only get updated after "!mp settings" has been ran.
+	public Mods Mods { get; set; }
 
-	public MultiplayerPlayer(string name, int slot, TeamColor team = TeamColor.None)
+	public int? Score { get; set; }
+	public bool? Passed { get; set; }
+
+	public MultiplayerPlayer(string name, int slot, TeamColor team = TeamColor.None, Mods mods = Mods.None)
 	{
 		Name = name;
 		Slot = slot;
 		Team = team;
+		Mods = mods;
 	}
 
 	public override bool Equals(object? other) => other?.GetType() == typeof(MultiplayerPlayer) && 

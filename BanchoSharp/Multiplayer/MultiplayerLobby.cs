@@ -122,6 +122,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public GameMode GameMode { get; private set; }
 	public List<MultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
+	public Mods Mods { get; private set; } = Mods.None;
 
 	public async Task UpdateSettingsAsync(LobbyFormat? format, WinCondition? winCondition, GameMode? gameMode)
 	{
@@ -305,6 +306,22 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdateMatchHost(banchoResponse);
 		}
+		else if (IsMatchActiveModsNotification(banchoResponse))
+		{
+			UpdateMatchMods(banchoResponse);
+		}
+		else if (IsMatchModsUpdatedNotification(banchoResponse))
+		{
+			UpdateMatchHost(banchoResponse);
+		}
+		else if (IsPlayerFinishedNotification(banchoResponse))
+		{
+			UpdatePlayerResults(banchoResponse);
+		}
+		else if (IsPlayerLeftNotification(banchoResponse))
+		{
+			UpdatePlayerDisconnect(banchoResponse);
+		}
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -321,6 +338,11 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
 
+	private bool IsMatchActiveModsNotification(string banchoResponse) => banchoResponse.StartsWith("Active mods: ");
+	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
+	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
+	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
+	
 	private void UpdateNameHistory(string banchoResponse)
 	{
 		// Process room name and history
@@ -404,6 +426,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		if (player is null)
 		{
 			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot));
+
+			player = FindPlayer(playerName);
 		}
 		else
 		{
@@ -414,6 +438,78 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				player.Slot = slot;
 
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
+			}
+		}
+		
+		if (playerInfo != null && player is not null)
+		{
+			// Just finding words in this string feels like an easier approach at the moment, since the string provided
+			// by bancho seems to be using both '/' and ',' as a separator at the same time, and I don't see any
+			// benefits with working that out right now.
+
+			if (playerInfo.Contains("Host"))
+			{
+				var prevHostName = Host?.Name;
+
+				Host = player;
+
+				if (Host is not null)
+				{
+					if (Host.Name != prevHostName)
+					{
+						OnHostChanged?.Invoke(Host);
+					}
+				}
+			}
+
+			if (playerInfo.Contains("Team "))
+			{
+				var prevTeam = player.Team;
+
+				if (playerInfo.Contains("Team Blue") && player.Team != TeamColor.Blue)
+				{
+					player.Team = TeamColor.Blue;
+
+					OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(player, prevTeam));
+				}
+
+				if (playerInfo.Contains("Team Red") && player.Team != TeamColor.Red)
+				{
+					player.Team = TeamColor.Red;
+
+					OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(player, prevTeam));
+				}
+			}
+
+			// Only attempt to find player mods if Freemod is enabled
+			if ((Mods & Mods.Freemod) != 0)
+			{
+				player.Mods = Mods.None;	
+
+				// Since all mods should be correctly named directly within the enum, we should just
+				// be able to match strings here.
+				foreach (Mods mod in Enum.GetValues(typeof(Mods)))
+				{
+					if (mod == Mods.None) continue;
+
+					var modName = Enum.GetName(typeof(Mods), mod);
+
+					if (modName == null) continue;
+
+					// Bancho calls autopilot for "Relax2" for some reason
+					if (modName == "Autopilot")
+						modName = "Relax2"; 
+
+					if (playerInfo.Contains(modName))
+					{
+						player.Mods |= mod;
+					}
+				}
+			}
+			else
+			{
+				// Otherwise just apply the room mods to the player
+				player.Mods = Mods;
 			}
 		}
 
@@ -505,5 +601,97 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		WinCondition = ParseWinCondition(winCondition);
 		Format = ParseFormat(format);
 	}
-#endregion
+
+	private void UpdateMatchMods(string banchoResponse)
+	{
+		string modList;
+		
+		if (IsMatchModsUpdatedNotification(banchoResponse))
+		{
+			// This notification comes after running "!mp mods <mods>"
+
+			if (banchoResponse.Equals("Disabled all mods, disabled FreeMod"))
+			{
+				Mods = Mods.None;
+				return;
+			}
+
+			if (banchoResponse.Equals("Disabled all mods, enabled FreeMod"))
+			{
+				Mods = Mods.Freemod;
+				return;
+			}
+			
+			// Get the mods part from the response, example: "Enabled Hidden, HardRock, disabled Freemod"
+			modList = banchoResponse.Split(", disabled FreeMod")[0].Trim()[8..];
+		}
+		else
+		{
+			// Otherwise it came after running "!mp settings"
+			
+			modList = banchoResponse.Split("Active mods: ")[1].Trim();
+		}
+		
+		var mods = modList.Split(',').ToList();
+
+		// If only a single mod was selected, there is no ',' separator in the string
+		// so just add it manually
+		if (!mods.Any())
+			mods.Add(modList);
+		
+		Mods = Mods.None;
+
+		foreach (string modStr in mods)
+		{
+			if (Enum.TryParse(modStr, out Mods mod))
+			{
+				Mods |= mod;
+			}
+			else
+			{
+				// Bancho calls autopilot for "Relax2" for some reason.
+				if (modStr == "Relax2")
+				{
+					Mods |= Mods.Autopilot;
+					continue;
+				}
+				
+				Logger.Warn($"Failed to parse mod called: {modStr}");
+			}
+		}
+	}
+
+	private void UpdatePlayerResults(string banchoResponse)
+	{
+		// Example input: "Player 1 finished playing (Score: 3818280, PASSED)."
+		
+		// Grab the player name from the beginning of the string
+		string playerName = banchoResponse[..banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal)];
+		var player = FindPlayer(playerName);
+
+		if (player is null) return;
+		
+		// Grab everything after the "(Score: " part, so for example "3818280, PASSED)."
+		string resultStr = banchoResponse[(banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal) + 26)..];
+		
+		int score = int.Parse(resultStr.Split(',')[0]);
+
+		player.Score = score;
+		player.Passed = resultStr.Contains("PASSED");
+	}
+
+	private void UpdatePlayerDisconnect(string banchoResponse)
+	{
+		string playerName = banchoResponse.Split(" left the game")[0];
+
+		var player = FindPlayer(playerName);
+
+		if (player is null)
+		{
+			return;
+		}
+		
+		OnPlayerDisconnected?.Invoke(new PlayerDisconnectedEventArgs(player, DateTime.Now));
+	}
+	#endregion
 }
