@@ -104,6 +104,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
+	public event Action? OnAllPlayersReady;
 	public long Id { get; }
 	public string Name { get; private set; }
 	public string? HistoryUrl { get; private set; }
@@ -322,6 +323,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdatePlayerDisconnect(banchoResponse);
 		}
+		else if (IsAllPlayersReadyNotification(banchoResponse))
+		{
+			OnAllPlayersReady?.Invoke();
+		}
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -342,6 +347,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
+	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
 	
 	private void UpdateNameHistory(string banchoResponse)
 	{
