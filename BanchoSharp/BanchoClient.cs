@@ -110,7 +110,7 @@ public class BanchoClient : IBanchoClient
 	{
 		await Execute($"QUERY {user}");
 
-		if (Channels.Any(x => x.ChannelName.Equals(user, StringComparison.OrdinalIgnoreCase)))
+		if (ContainsChannel(user))
 		{
 			return;
 		}
@@ -121,19 +121,19 @@ public class BanchoClient : IBanchoClient
 
 	public async Task MakeTournamentLobbyAsync(string name, bool isPrivate = false)
 	{
-		if (!Channels.Any(x => x.ChannelName == "BanchoBot"))
+		if (!ContainsChannel("BanchoBot"))
 		{
 			await JoinChannelAsync("BanchoBot");
 		}
 
 		string arg = isPrivate ? "makeprivate" : "make";
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
-
-		// todo: join the channel sent by banchobot
 	}
 
 	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 
+	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+	
 	private void RegisterInvokers()
 	{
 		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
@@ -200,7 +200,7 @@ public class BanchoClient : IBanchoClient
 				string channelNameMessage = m.RawMessage.Split(" :")[0].Trim();
 				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.OrdinalIgnoreCase)..];
 
-				if (GetChannel(channelName) != null)
+				if (ContainsChannel(channelName))
 				{
 					return;
 				}

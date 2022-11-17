@@ -25,6 +25,7 @@ public class ClientTests
 				Assert.That(ch, Is.Not.Null);
 
 #pragma warning disable CS8602
+				Assert.That(client.ContainsChannel(ch.ChannelName));
 				Assert.That(ch.ChannelName, Is.EqualTo(channel));
 #pragma warning restore CS8602
 			});
