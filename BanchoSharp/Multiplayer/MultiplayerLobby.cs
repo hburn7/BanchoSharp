@@ -56,12 +56,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		Id = id;
 		Name = name;
-		HistoryUrl = $"https://osu.ppy.sh/mp/{id}";
-		Size = 1;
-		GameMode = GameMode.osu;
-
-		Format = LobbyFormat.HeadToHead;
-		WinCondition = WinCondition.Score;
 
 		_client.OnMessageReceived += m =>
 		{
@@ -104,11 +98,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action? OnHostChangingMap;
-	public event Action? OnAllPlayersReady;
 	public long Id { get; }
 	public string Name { get; private set; }
-	public string? HistoryUrl { get; private set; }
-	public int Size { get; private set; }
+	public string HistoryUrl => $"https://osu.ppy.sh/mp/{Id}";
+	public int Size { get; private set; } = 1;
 	public MultiplayerPlayer? Host { get; private set; }
 	public bool HostIsChangingMap { get; private set; }
 	public bool MatchInProgress { get; private set; }
@@ -118,9 +111,9 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public TimeSpan? MatchTimerRemaining => _matchTimerEnd?.Subtract(DateTime.Now);
 	public bool MatchStartTimerInProgress => MatchTimerRemaining > TimeSpan.FromSeconds(0);
 	public bool LobbyTimerInProgress => LobbyTimerRemaining > TimeSpan.FromSeconds(0);
-	public LobbyFormat Format { get; private set; }
-	public WinCondition WinCondition { get; private set; }
-	public GameMode GameMode { get; private set; }
+	public LobbyFormat Format { get; private set; } = LobbyFormat.HeadToHead;
+	public WinCondition WinCondition { get; private set; } = WinCondition.Score;
+	public GameMode GameMode { get; private set; } = GameMode.osu;
 	public List<MultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
 	public Mods Mods { get; private set; } = Mods.None;
@@ -254,7 +247,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
-
+	public event Action? OnAllPlayersReady;
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
@@ -262,7 +255,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		if (IsRoomNameNotification(banchoResponse))
 		{
-			UpdateNameHistory(banchoResponse);
+			UpdateName(banchoResponse);
 		}
 		else if (IsTeamModeNotification(banchoResponse))
 		{
@@ -342,27 +335,22 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
-
 	private bool IsMatchActiveModsNotification(string banchoResponse) => banchoResponse.StartsWith("Active mods: ");
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
-	
-	private void UpdateNameHistory(string banchoResponse)
+
+	private void UpdateName(string banchoResponse)
 	{
-		// Process room name and history
+		// Process room name
 
 		// Index of where the multiplayer lobby name begins
 		int index = banchoResponse.LastIndexOf(',');
 		string nameSub = banchoResponse[..index];
 		string name = nameSub.Split(':')[1].Trim();
 
-		string historySub = banchoResponse[(index + 1)..];
-		string history = historySub.Substring(historySub.IndexOf(':') + 2);
-
 		Name = name;
-		HistoryUrl = history;
 	}
 
 	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x == name);
@@ -446,7 +434,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
 			}
 		}
-		
+
 		if (playerInfo != null && player is not null)
 		{
 			// Just finding words in this string feels like an easier approach at the moment, since the string provided
@@ -455,7 +443,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 			if (playerInfo.Contains("Host"))
 			{
-				var prevHostName = Host?.Name;
+				string? prevHostName = Host?.Name;
 
 				Host = player;
 
@@ -490,21 +478,29 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			// Only attempt to find player mods if Freemod is enabled
 			if ((Mods & Mods.Freemod) != 0)
 			{
-				player.Mods = Mods.None;	
+				player.Mods = Mods.None;
 
 				// Since all mods should be correctly named directly within the enum, we should just
 				// be able to match strings here.
 				foreach (Mods mod in Enum.GetValues(typeof(Mods)))
 				{
-					if (mod == Mods.None) continue;
+					if (mod == Mods.None)
+					{
+						continue;
+					}
 
-					var modName = Enum.GetName(typeof(Mods), mod);
+					string? modName = Enum.GetName(typeof(Mods), mod);
 
-					if (modName == null) continue;
+					if (modName == null)
+					{
+						continue;
+					}
 
 					// Bancho calls autopilot for "Relax2" for some reason
 					if (modName == "Autopilot")
-						modName = "Relax2"; 
+					{
+						modName = "Relax2";
+					}
 
 					if (playerInfo.Contains(modName))
 					{
@@ -611,7 +607,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdateMatchMods(string banchoResponse)
 	{
 		string modList;
-		
+
 		if (IsMatchModsUpdatedNotification(banchoResponse))
 		{
 			// This notification comes after running "!mp mods <mods>"
@@ -627,24 +623,26 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				Mods = Mods.Freemod;
 				return;
 			}
-			
+
 			// Get the mods part from the response, example: "Enabled Hidden, HardRock, disabled Freemod"
 			modList = banchoResponse.Split(", disabled FreeMod")[0].Trim()[8..];
 		}
 		else
 		{
 			// Otherwise it came after running "!mp settings"
-			
+
 			modList = banchoResponse.Split("Active mods: ")[1].Trim();
 		}
-		
+
 		var mods = modList.Split(',').ToList();
 
 		// If only a single mod was selected, there is no ',' separator in the string
 		// so just add it manually
 		if (!mods.Any())
+		{
 			mods.Add(modList);
-		
+		}
+
 		Mods = Mods.None;
 
 		foreach (string modStr in mods)
@@ -661,7 +659,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 					Mods |= Mods.Autopilot;
 					continue;
 				}
-				
+
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
 		}
@@ -670,16 +668,19 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdatePlayerResults(string banchoResponse)
 	{
 		// Example input: "Player 1 finished playing (Score: 3818280, PASSED)."
-		
+
 		// Grab the player name from the beginning of the string
 		string playerName = banchoResponse[..banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal)];
 		var player = FindPlayer(playerName);
 
-		if (player is null) return;
-		
+		if (player is null)
+		{
+			return;
+		}
+
 		// Grab everything after the "(Score: " part, so for example "3818280, PASSED)."
 		string resultStr = banchoResponse[(banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal) + 26)..];
-		
+
 		int score = int.Parse(resultStr.Split(',')[0]);
 
 		player.Score = score;
@@ -696,8 +697,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			return;
 		}
-		
+
 		OnPlayerDisconnected?.Invoke(new PlayerDisconnectedEventArgs(player, DateTime.Now));
 	}
-	#endregion
+#endregion
 }
