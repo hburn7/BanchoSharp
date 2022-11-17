@@ -134,7 +134,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		await SendAsync("!mp abort");
 		MatchInProgress = false;
-		OnMatchAborted?.Invoke();
 	}
 
 	public async Task AbortTimerAsync()
@@ -319,6 +318,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnAllPlayersReady?.Invoke();
 		}
+		else if (IsMatchAbortedNotification(banchoResponse))
+		{
+			OnMatchAborted?.Invoke();
+		}
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -339,7 +342,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
-
+	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
+	
 	private void UpdateName(string banchoResponse)
 	{
 		// Process room name
