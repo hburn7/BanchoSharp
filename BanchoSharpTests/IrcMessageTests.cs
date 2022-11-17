@@ -43,7 +43,7 @@ public class IrcMessageTests
 	[Test]
 	public void TestPrivateIrcMessageCreatedFromParameters()
 	{
-		var copy = new PrivateIrcMessage(_samplePrivateMessage.RawMessage, "Stage");
+		var copy = new PrivateIrcMessage(_samplePrivateMessage.RawMessage);
 		Assert.Multiple(() =>
 		{
 			Assert.That(copy.Content, Is.EqualTo("Hello world!"));
@@ -72,7 +72,17 @@ public class IrcMessageTests
 	[Test]
 	public void TestPrivateIrcMessageConstructor()
 	{
-		
+		// Random message pulled from #osu
+		string raw = ":c4mmy!cho@ppy.sh PRIVMSG #osu :nah i mean gigachad lily";
+		IPrivateIrcMessage priv = new PrivateIrcMessage(raw);
+		Assert.Multiple(() =>
+		{
+			Assert.That(priv.Content, Is.EqualTo("nah i mean gigachad lily"));
+			Assert.That(priv.Recipient, Is.EqualTo("#osu"));
+			Assert.That(priv.Sender, Is.EqualTo("c4mmy"));
+			Assert.That(priv.IsDirect, Is.EqualTo(false));
+			Assert.That(priv.IsBanchoBotMessage, Is.EqualTo(false));
+		});
 	}
 
 	private bool IsWithin1ms(DateTime a, DateTime b) => Math.Abs((a - b).TotalMilliseconds) < 1;
