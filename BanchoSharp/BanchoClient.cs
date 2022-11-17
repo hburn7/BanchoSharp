@@ -222,7 +222,7 @@ public class BanchoClient : IBanchoClient
 					return;
 				}
 				
-				var channel = new Channel(channelName);
+				var channel = new Channel(channelName, ClientConfig.SaveMessags);
 				
 				Channels.Add(channel);
 				OnChannelJoined?.Invoke(channel);
