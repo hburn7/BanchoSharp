@@ -50,7 +50,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private DateTime? _matchTimerEnd;
 	private int _playersRemainingCount;
 
-	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}")
+	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}", client.ClientConfig.SaveMessags)
 	{
 		_client = client;
 
