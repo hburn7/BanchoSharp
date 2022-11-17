@@ -4,7 +4,7 @@ namespace BanchoSharp.Messaging.ChatMessages;
 
 public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 {
-	public PrivateIrcMessage(string rawMessage, string username) : base(rawMessage)
+	public PrivateIrcMessage(string rawMessage, string recipientUsername) : base(rawMessage)
 	{
 		Recipient = Parameters[0];
 		Content = Parameters[1];
@@ -16,7 +16,7 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 			 Sender = Sender[1..];
 		}
 
-		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(username, StringComparison.OrdinalIgnoreCase);
+		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(recipientUsername, StringComparison.OrdinalIgnoreCase);
 		IsBanchoBotMessage = Sender == "BanchoBot";
 	}
 
