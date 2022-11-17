@@ -68,9 +68,9 @@ public class IrcMessage : IIrcMessage
 		Tags = new Dictionary<string, string>();
 		Timestamp = DateTime.Now;
 	}
-
-	public bool IsPrefixHostmask => !String.IsNullOrWhiteSpace(Prefix) && Prefix.Contains('@') && Prefix.Contains('!');
-	public bool IsPrefixServer => !String.IsNullOrWhiteSpace(Prefix) && !IsPrefixHostmask && Prefix.Contains('.');
+	// Unused -- Will leave here in case they're needed.
+	// private bool IsPrefixHostmask => !String.IsNullOrWhiteSpace(Prefix) && Prefix.Contains('@') && Prefix.Contains('!');
+	// private bool IsPrefixServer => !String.IsNullOrWhiteSpace(Prefix) && !IsPrefixHostmask && Prefix.Contains('.');
 	public string RawMessage { get; init; }
 	public IList<string> Parameters { get; }
 	public IDictionary<string, string> Tags { get; }
