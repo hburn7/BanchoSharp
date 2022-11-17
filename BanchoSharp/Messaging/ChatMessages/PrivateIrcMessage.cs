@@ -37,5 +37,5 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 	/// <param name="username">The username of the logged in user</param>
 	/// <returns>Fully loaded <see cref="IPrivateIrcMessage"/></returns>
 	public static IPrivateIrcMessage CreateFromParameters(string sender, string recipient, string content) =>
-		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}", sender);
+		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}", recipient);
 }
