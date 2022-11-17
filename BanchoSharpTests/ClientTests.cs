@@ -75,8 +75,8 @@ public class ClientTests
 	{
 		var client = new BanchoClient();
 
-		IChatChannel[] channels = { new Channel("TheOmyNomy"), 
-			new Channel("#osu"), new MultiplayerLobby(client, 123, "awesome tournament 5") };
+		IChatChannel[] channels = { new Channel("TheOmyNomy", true), 
+			new Channel("#osu", true), new MultiplayerLobby(client, 123, "awesome tournament 5") };
 
 		foreach (var channel in channels)
 		{
@@ -88,6 +88,31 @@ public class ClientTests
 		foreach (var channel in client.Channels.ToList())
 		{
 			Assert.That(channel.MessageHistory!.Count, Is.GreaterThan(0));
+		}
+	}
+
+	[Test]
+	public async Task TestInvalidMessageHistory()
+	{
+		var client = new BanchoClient();
+		client.ClientConfig = new BanchoClientConfig(new IrcCredentials(), LogLevel.Debug, false);
+
+		IChatChannel[] channels = { new Channel("TheOmyNomy", client.ClientConfig.SaveMessags), 
+			new Channel("#osu", client.ClientConfig.SaveMessags), new MultiplayerLobby(client, 123, "awesome tournament 5") };
+		
+		foreach (var channel in channels)
+		{
+			Assert.That(channel.MessageHistory, Is.Null);
+			await client.JoinChannelAsync(channel.ChannelName);
+			Assert.DoesNotThrowAsync(async () =>
+			{
+				await client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
+			});
+		}
+
+		foreach (var channel in client.Channels.ToList())
+		{
+			Assert.That(channel.MessageHistory, Is.Null);
 		}
 	}
 
