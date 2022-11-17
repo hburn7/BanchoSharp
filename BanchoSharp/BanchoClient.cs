@@ -309,7 +309,7 @@ public class BanchoClient : IBanchoClient
 
 			if (message.Command == "PRIVMSG")
 			{
-				message = new PrivateIrcMessage(line, ClientConfig.Credentials.Username);
+				message = new PrivateIrcMessage(line);
 			}
 
 			OnMessageReceived?.Invoke(message);

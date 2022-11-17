@@ -4,7 +4,7 @@ namespace BanchoSharp.Messaging.ChatMessages;
 
 public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 {
-	public PrivateIrcMessage(string rawMessage, string recipientUsername) : base(rawMessage)
+	public PrivateIrcMessage(string rawMessage) : base(rawMessage)
 	{
 		Recipient = Parameters[0];
 		Content = Parameters[1];
@@ -16,7 +16,7 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 			 Sender = Sender[1..];
 		}
 
-		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(recipientUsername, StringComparison.OrdinalIgnoreCase);
+		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(Recipient, StringComparison.OrdinalIgnoreCase);
 		IsBanchoBotMessage = Sender == "BanchoBot";
 	}
 
@@ -37,5 +37,5 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 	/// <param name="username">The username of the logged in user</param>
 	/// <returns>Fully loaded <see cref="IPrivateIrcMessage"/></returns>
 	public static IPrivateIrcMessage CreateFromParameters(string sender, string recipient, string content) =>
-		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}", recipient);
+		new PrivateIrcMessage($":{sender}!cho@ppy.sh PRIVMSG {recipient} :{content}");
 }
