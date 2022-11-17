@@ -212,18 +212,20 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 
-			if (m.Command == "332")
+			if (m.Command == "332")  // RPL_TOPIC code. Received whenever a channel is joined.
 			{
-				// sample message: "#mp_105079765 :multiplayer game #4464"
-				string channelNameMessage = m.RawMessage.Split(" :")[0].Trim();
-				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.OrdinalIgnoreCase)..];
-
+				string channelNameMessage = m.RawMessage.Split(" :")[0];
+				string channelName = channelNameMessage[channelNameMessage.IndexOf("#", StringComparison.OrdinalIgnoreCase)..];
+				
 				if (ContainsChannel(channelName))
 				{
 					return;
 				}
 				
-				await JoinChannelAsync(channelName);
+				var channel = new Channel(channelName);
+				
+				Channels.Add(channel);
+				OnChannelJoined?.Invoke(channel);
 			}
 			else if (m.Command == "403")
 			{
