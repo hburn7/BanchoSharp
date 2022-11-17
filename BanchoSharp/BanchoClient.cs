@@ -194,7 +194,7 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 
-			if (m.Command == "332")
+			if (m.Command == "332")  // RPL_TOPIC code. Received whenever a channel is joined.
 			{
 				// sample message: "#mp_105079765 :multiplayer game #4464"
 				string channelNameMessage = m.RawMessage.Split(" :")[0].Trim();
