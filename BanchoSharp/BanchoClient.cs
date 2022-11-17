@@ -200,8 +200,6 @@ public class BanchoClient : IBanchoClient
 				string channelNameMessage = m.RawMessage.Split(" :")[0].Trim();
 				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.OrdinalIgnoreCase)..];
 
-				var channel = new Channel(channelName);
-
 				if (GetChannel(channelName) != null)
 				{
 					return;
