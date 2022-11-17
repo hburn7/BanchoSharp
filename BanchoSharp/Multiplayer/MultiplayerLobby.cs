@@ -83,7 +83,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			ResetMatchTimer();
 		};
 
-		OnPlayerJoined += player => { Players.Add(player); };
+		OnPlayerJoined += player => Players.Add(player);
 
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
 	}
