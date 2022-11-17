@@ -85,6 +85,10 @@ public class BanchoClient : IBanchoClient
 	public async Task JoinChannelAsync(string name)
 	{
 		await Execute($"JOIN {name}");
+
+		var channel = new Channel(name);
+		Channels.Add(channel);
+		OnChannelJoined?.Invoke(channel);
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -128,7 +132,7 @@ public class BanchoClient : IBanchoClient
 		// todo: join the channel sent by banchobot
 	}
 
-	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName == fullName);
+	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 
 	private void RegisterInvokers()
 	{
@@ -193,18 +197,17 @@ public class BanchoClient : IBanchoClient
 			if (m.Command == "332")
 			{
 				// sample message: "#mp_105079765 :multiplayer game #4464"
-				string channelNameMessage = m.RawMessage.Split(" :")[0];
-				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.Ordinal)..];
+				string channelNameMessage = m.RawMessage.Split(" :")[0].Trim();
+				string channelName = channelNameMessage[channelNameMessage.IndexOf("#mp_", StringComparison.OrdinalIgnoreCase)..];
 
 				var channel = new Channel(channelName);
 
-				if (Channels.Any(x => x.ChannelName.Equals(channel.ChannelName, StringComparison.OrdinalIgnoreCase)))
+				if (GetChannel(channelName) != null)
 				{
 					return;
 				}
-
-				Channels.Add(channel);
-				OnChannelJoined?.Invoke(channel);
+				
+				await JoinChannelAsync(channelName);
 			}
 			else if (m.Command == "403")
 			{
