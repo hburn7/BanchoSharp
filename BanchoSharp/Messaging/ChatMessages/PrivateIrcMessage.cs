@@ -16,7 +16,9 @@ public class PrivateIrcMessage : IrcMessage, IPrivateIrcMessage
 			 Sender = Sender[1..];
 		}
 
-		IsDirect = !Sender.StartsWith("#") && Recipient.Equals(Recipient, StringComparison.OrdinalIgnoreCase);
+		// Ensures both the sender and recipient are not public channels, which
+		// implies the message is direct between users.
+		IsDirect = !Recipient.StartsWith("#") && !Sender.StartsWith("#");
 		IsBanchoBotMessage = Sender == "BanchoBot";
 	}
 
