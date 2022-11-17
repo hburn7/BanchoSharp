@@ -78,7 +78,8 @@ public class BanchoClient : IBanchoClient
 	{
 		await Execute($"PRIVMSG {destination} {content}");
 		var priv = PrivateIrcMessage.CreateFromParameters(ClientConfig.Credentials.Username, destination, content);
-		Channels.FirstOrDefault(x => x.ChannelName.Equals(destination, StringComparison.OrdinalIgnoreCase))?.MessageHistory?.AddLast(priv);
+		var channel = GetChannel(destination);
+		channel?.MessageHistory?.AddLast(priv);
 		OnPrivateMessageSent?.Invoke(priv);
 	}
 
@@ -86,15 +87,14 @@ public class BanchoClient : IBanchoClient
 	{
 		await Execute($"JOIN {name}");
 
-		var channel = new Channel(name);
-		Channels.Add(channel);
+		var channel = AddChannel(name);
 		OnChannelJoined?.Invoke(channel);
 	}
 
 	public async Task PartChannelAsync(string name)
 	{
 		await Execute($"PART {name}");
-		var channel = Channels.FirstOrDefault(x => x.ChannelName == name);
+		var channel = GetChannel(name);
 
 		if (channel == null)
 		{
@@ -102,7 +102,7 @@ public class BanchoClient : IBanchoClient
 			return;
 		}
 
-		Channels.Remove(channel);
+		RemoveChannel(channel.ChannelName);
 		OnChannelParted?.Invoke(channel);
 	}
 
@@ -114,8 +114,8 @@ public class BanchoClient : IBanchoClient
 		{
 			return;
 		}
-		
-		Channels.Add(new Channel(user));
+
+		AddChannel(user);
 		OnUserQueried?.Invoke(user);
 	}
 
@@ -130,6 +130,24 @@ public class BanchoClient : IBanchoClient
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
 	}
 
+	private void RemoveChannel(string channelName)
+	{
+		var ch = GetChannel(channelName);
+
+		if (ch != null)
+		{
+			Channels.Remove(ch);
+			Logger.Debug($"Removed channel in memory: {ch}");
+		}
+	}
+
+	private IChatChannel AddChannel(string channelName)
+	{
+		var ch = new Channel(channelName, ClientConfig.SaveMessags);
+		Channels.Add(ch);
+		Logger.Debug($"Channel added in memory: {ch}");
+		return ch;
+	}
 	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 
 	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));

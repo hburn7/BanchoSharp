@@ -14,10 +14,11 @@ public class Channel : IChatChannel
 	/// </summary>
 	/// <param name="fullName">The full name of this channel. e.g. #english.
 	/// Can also be the name of a user.</param>
-	public Channel(string fullName)
+	/// <param name="saveMessages">Whether the client needs to save the message history in memory</param>
+	public Channel(string fullName, bool saveMessages)
 	{
 		ChannelName = fullName;
-		MessageHistory = new LinkedList<IIrcMessage>();
+		MessageHistory = saveMessages ? new LinkedList<IIrcMessage>() : null;
 		CreatedAt = DateTime.Now;
 	}
 
