@@ -10,14 +10,14 @@ public class ClientTests
 	public void Setup() {}
 
 	[Test]
-	public void TestJoinChannel()
+	public async Task TestJoinChannelAsync()
 	{
 		var client = new BanchoClient();
 		string[] channels = { "#osu", "The Omy Nomy Does Not Exist" };
 
 		foreach (string channel in channels)
 		{
-			client.JoinChannelAsync(channel).GetAwaiter().GetResult();
+			await client.JoinChannelAsync(channel);
 
 			Assert.Multiple(() =>
 			{
@@ -33,45 +33,45 @@ public class ClientTests
 	}
 
 	[Test]
-	public void TestPartChannel()
+	public async Task TestPartChannelAsync()
 	{
 		var client = new BanchoClient();
 
-		client.JoinChannelAsync("#osu").GetAwaiter().GetResult();
-		client.JoinChannelAsync("#english").GetAwaiter().GetResult();
-		client.JoinChannelAsync("#mp_128498").GetAwaiter().GetResult();
-		client.JoinChannelAsync("Some random guy").GetAwaiter().GetResult();
-		client.JoinChannelAsync("#some_random_guy").GetAwaiter().GetResult();
+		await client.JoinChannelAsync("#osu");
+		await client.JoinChannelAsync("#english");
+		await client.JoinChannelAsync("#mp_128498");
+		await client.JoinChannelAsync("Some random guy");
+		await client.JoinChannelAsync("#some_random_guy");
 
 		Assert.That(client.Channels.Count, Is.GreaterThan(0));
 
 		foreach (var channel in client.Channels.ToList())
 		{
-			client.PartChannelAsync(channel.ChannelName).GetAwaiter().GetResult();
+			await client.PartChannelAsync(channel.ChannelName);
 			Assert.That(client.GetChannel(channel.ChannelName), Is.Null);
 		}
 	}
 
 	[Test]
-	public void TestQueryUser()
+	public async Task TestQueryUser()
 	{
 		var client = new BanchoClient();
 
-		client.QueryUserAsync("Stage").GetAwaiter().GetResult();
-		client.QueryUserAsync("TheOmyNomy").GetAwaiter().GetResult();
-		client.QueryUserAsync("Peach").GetAwaiter().GetResult();
-		client.QueryUserAsync("Mario").GetAwaiter().GetResult();
+		await client.QueryUserAsync("Stage");
+		await client.QueryUserAsync("TheOmyNomy");
+		await client.QueryUserAsync("Peach");
+		await client.QueryUserAsync("Mario");
 
 		Assert.That(client.Channels, Has.Count.EqualTo(4));
 
 		foreach (var channel in client.Channels)
 		{
-			Assert.That(channel is IChatChannel chatCh && chatCh.ChannelName == channel.ChannelName);
+			Assert.That(channel is {} chatCh && chatCh.ChannelName == channel.ChannelName);
 		}
 	}
 
 	[Test]
-	public void TestMessageHistory()
+	public async Task TestMessageHistory()
 	{
 		var client = new BanchoClient();
 
@@ -81,8 +81,8 @@ public class ClientTests
 		foreach (var channel in channels)
 		{
 			Assert.That(channel.MessageHistory, Is.Not.Null);
-			client.JoinChannelAsync(channel.ChannelName).GetAwaiter().GetResult();
-			client.SendPrivateMessageAsync(channel.ChannelName, "Hello world").GetAwaiter().GetResult();
+			await client.JoinChannelAsync(channel.ChannelName);
+			await client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
 		}
 
 		foreach (var channel in client.Channels.ToList())
@@ -92,13 +92,13 @@ public class ClientTests
 	}
 
 	[Test]
-	public void TestOnMessageSent()
+	public async Task TestOnMessageSent()
 	{
 		var client = new BanchoClient();
 		bool sent = false;
 		
 		client.OnPrivateMessageSent += _ => sent = true;
-		client.SendPrivateMessageAsync("Dummy", "Hello world").GetAwaiter().GetResult();
+		await client.SendPrivateMessageAsync("Dummy", "Hello world");
 		
 		Assert.That(sent, Is.True);
 	}
