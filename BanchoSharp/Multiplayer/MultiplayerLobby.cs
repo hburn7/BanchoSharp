@@ -78,7 +78,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		};
 
 		OnPlayerJoined += player => Players.Add(player);
-
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
 	}
 
@@ -353,7 +352,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		Name = name;
 	}
 
-	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x == name);
+	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
 	private WinCondition ParseWinCondition(string wc) => wc switch
 	{
@@ -404,12 +403,12 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdatePlayerInformation(string banchoResponse)
 	{
 		// Find the digit(s) within the first 8 characters, which is the slot number
-		int slot = int.Parse(banchoResponse[..8].Where(c => char.IsDigit(c)).ToArray());
+		int slot = int.Parse(banchoResponse[..8].Where(char.IsDigit).ToArray());
 
 		// Find the first ' ' after the URL, since the URL is not padded with any spaces.
-		int playerNameBegin = banchoResponse.IndexOf(' ', banchoResponse.IndexOf("/u/")) + 1;
+		int playerNameBegin = banchoResponse.IndexOf(' ', banchoResponse.IndexOf("/u/", StringComparison.Ordinal)) + 1;
 
-		string playerName = banchoResponse.Substring(playerNameBegin, 16).TrimEnd();
+		string playerName = banchoResponse[playerNameBegin..16].TrimEnd();
 
 		// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
 		// character player name bit.
@@ -419,23 +418,21 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (player is null)
 		{
-			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slot));
-
-			player = FindPlayer(playerName);
+			player = new MultiplayerPlayer(playerName, slot);
+			OnPlayerJoined?.Invoke(player);
 		}
 		else
 		{
 			if (player.Slot != slot)
 			{
 				int previousSlot = player.Slot;
-
 				player.Slot = slot;
 
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
 			}
 		}
 
-		if (playerInfo != null && player is not null)
+		if (playerInfo != null)
 		{
 			// Just finding words in this string feels like an easier approach at the moment, since the string provided
 			// by bancho seems to be using both '/' and ',' as a separator at the same time, and I don't see any
@@ -447,12 +444,9 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 				Host = player;
 
-				if (Host is not null)
+				if (Host.Name != prevHostName)
 				{
-					if (Host.Name != prevHostName)
-					{
-						OnHostChanged?.Invoke(Host);
-					}
+					OnHostChanged?.Invoke(Host);
 				}
 			}
 
@@ -476,7 +470,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 
 			// Only attempt to find player mods if Freemod is enabled
-			if ((Mods & Mods.Freemod) != 0)
+			if ((Mods & Mods.Freemod) == Mods.Freemod)
 			{
 				player.Mods = Mods.None;
 
@@ -552,17 +546,19 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		var player = FindPlayer(name);
 		int previousSlot = player!.Slot;
-		player!.Slot = slotNum;
+		player.Slot = slotNum;
 
 		OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
 	}
 
+	// Handles joining in a slot *and* joining in a team slot.
 	private void UpdatePlayerJoinedInSlot(string banchoResponse)
 	{
+		string[] splits = banchoResponse.Split(" joined in slot ");
+		string playerName = splits[0];
+		
 		if (banchoResponse.Contains("for team"))
 		{
-			string[] splits = banchoResponse.Split(" joined in slot ");
-			string playerName = splits[0];
 			int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
 			string team = banchoResponse.Split(" for team ")[1][..^1];
 			var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
@@ -570,8 +566,6 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else
 		{
-			string[] splits = banchoResponse.Split(" joined in slot ");
-			string playerName = splits[0];
 			int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
 			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
 		}
