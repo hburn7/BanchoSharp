@@ -417,12 +417,19 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
 		// character player name bit.
 		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
-
+		
+		// Find the digits from "/u/" to where the name begins
+		int playerId = int.Parse(banchoResponse[banchoResponse.IndexOf("/u/", StringComparison.Ordinal)..(playerNameBegin-1)].Where(char.IsDigit).ToArray());
+		
 		var player = FindPlayer(playerName);
 
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(playerName, slot);
+			player = new MultiplayerPlayer(playerName, slot)
+			{
+				Id = playerId
+			};
+
 			OnPlayerJoined?.Invoke(player);
 		}
 		else
@@ -435,6 +442,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
 			}
 		}
+		
+		player.Id = playerId;
 
 		if (playerInfo != null)
 		{
