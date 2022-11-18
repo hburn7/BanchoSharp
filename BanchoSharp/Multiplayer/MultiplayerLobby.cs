@@ -549,6 +549,14 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		int slotNum = int.Parse(slot);
 
 		var player = FindPlayer(name);
+
+		if (player is null)
+		{
+			// This may happen if couldn't track the user joining in the first place,
+			// which shouldn't be very often.
+			return;
+		}
+		
 		int previousSlot = player!.Slot;
 		player.Slot = slotNum;
 
