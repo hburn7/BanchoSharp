@@ -417,9 +417,14 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
 		// character player name bit.
 		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
+
+		int? playerId = null;
 		
-		// Find the digits from "/u/" to where the name begins
-		int playerId = int.Parse(banchoResponse[banchoResponse.IndexOf("/u/", StringComparison.Ordinal)..(playerNameBegin-1)].Where(char.IsDigit).ToArray());
+		// Attempt to find the digits from "/u/" to where the name begins, which is the player id.
+		if (int.TryParse(banchoResponse[banchoResponse.IndexOf("/u/", StringComparison.Ordinal)..(playerNameBegin - 1)].Where(char.IsDigit).ToArray(), out int parsedPlayerId))
+		{
+			playerId = parsedPlayerId;
+		}
 		
 		var player = FindPlayer(playerName);
 

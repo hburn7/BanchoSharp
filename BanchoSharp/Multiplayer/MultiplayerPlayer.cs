@@ -10,7 +10,6 @@ public enum TeamColor
 public class MultiplayerPlayer
 {
 	public int? Id { get; set; }
-	
 	public string Name { get; }
 	public TeamColor Team { get; set; }
 	public int Slot { get; set; }
