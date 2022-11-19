@@ -304,7 +304,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsMatchModsUpdatedNotification(banchoResponse))
 		{
-			UpdateMatchHost(banchoResponse);
+			UpdateMatchMods(banchoResponse);
 		}
 		else if (IsPlayerFinishedNotification(banchoResponse))
 		{
