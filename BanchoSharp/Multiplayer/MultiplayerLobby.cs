@@ -418,11 +418,23 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		// character player name bit.
 		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
 
+		int? playerId = null;
+		
+		// Attempt to find the digits from "/u/" to where the name begins, which is the player id.
+		if (int.TryParse(banchoResponse[banchoResponse.IndexOf("/u/", StringComparison.Ordinal)..(playerNameBegin - 1)].Where(char.IsDigit).ToArray(), out int parsedPlayerId))
+		{
+			playerId = parsedPlayerId;
+		}
+		
 		var player = FindPlayer(playerName);
 
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(playerName, slot);
+			player = new MultiplayerPlayer(playerName, slot)
+			{
+				Id = playerId
+			};
+
 			OnPlayerJoined?.Invoke(player);
 		}
 		else
@@ -435,6 +447,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
 			}
 		}
+		
+		player.Id = playerId;
 
 		if (playerInfo != null)
 		{
