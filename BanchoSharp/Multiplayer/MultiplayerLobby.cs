@@ -549,6 +549,13 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		int slotNum = int.Parse(slot);
 
 		var player = FindPlayer(name);
+
+		if (player is null)
+		{
+			player = new MultiplayerPlayer(name, slotNum);
+			Players.Add(player);
+		}
+		
 		int previousSlot = player!.Slot;
 		player.Slot = slotNum;
 
