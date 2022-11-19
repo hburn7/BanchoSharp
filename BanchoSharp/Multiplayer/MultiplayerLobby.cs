@@ -552,9 +552,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (player is null)
 		{
-			// This may happen if couldn't track the user joining in the first place,
-			// which shouldn't be very often.
-			return;
+			player = new MultiplayerPlayer(name, slotNum);
+			Players.Add(player);
 		}
 		
 		int previousSlot = player!.Slot;
