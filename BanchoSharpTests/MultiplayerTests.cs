@@ -19,13 +19,15 @@ public class MultiplayerTests
 	}
 
 	[Test]
-	public void TestProcessMultiplayerLobbyCreation()
+	public void TestCreation()
 	{
 		string content = "Created the tournament match https://osu.ppy.sh/mp/104889872 test with spaces 9nd 4umber5";
 		var msg = PrivateIrcMessage.CreateFromParameters("BanchoBot", "Dummy", content);
 
+		bool invoked = false;
 		_events.OnTournamentLobbyCreated += lobby =>
 		{
+			invoked = true;
 			Assert.Multiple(() =>
 			{
 				Assert.That(lobby.Name, Is.EqualTo("test with spaces 9nd 4umber5"));
@@ -35,6 +37,6 @@ public class MultiplayerTests
 		};
 
 		_invoker.ProcessMessage(msg);
-		Assert.Pass();
+		Assert.That(invoked, Is.True);
 	}
 }
