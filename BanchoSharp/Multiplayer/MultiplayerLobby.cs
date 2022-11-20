@@ -330,7 +330,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to: ");
 	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match host to ");
 	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
-	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("Started the match");
+	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("The match has started!");
 	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
 	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
 	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players: ");
