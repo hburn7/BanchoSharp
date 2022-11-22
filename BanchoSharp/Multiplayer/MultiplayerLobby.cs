@@ -321,6 +321,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		else if (IsMatchAbortedNotification(banchoResponse))
 		{
 			OnMatchAborted?.Invoke();
+			MatchInProgress = false;
 		}
 	}
 
