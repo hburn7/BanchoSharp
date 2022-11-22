@@ -304,7 +304,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsMatchModsUpdatedNotification(banchoResponse))
 		{
-			UpdateMatchHost(banchoResponse);
+			UpdateMatchMods(banchoResponse);
 		}
 		else if (IsPlayerFinishedNotification(banchoResponse))
 		{
@@ -328,9 +328,9 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode: ");
 	private bool IsHostChangingMapNotification(string banchoResponse) => banchoResponse.Equals("Host is changing map...");
 	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to: ");
-	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match host to ");
+	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.EndsWith(" became the host.");
 	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
-	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("Started the match");
+	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("The match has started!");
 	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
 	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
 	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players: ");
@@ -390,7 +390,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 #region MultiplayerLobby update methods
 	private void UpdateMatchHost(string banchoResponse)
 	{
-		string hostPlayerName = banchoResponse.Split("Changed match host to ")[1];
+		string hostPlayerName = banchoResponse.Split(" became the host")[0];
 		string? prevHostName = Host?.Name;
 
 		Host = FindPlayer(hostPlayerName);
