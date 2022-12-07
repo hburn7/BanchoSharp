@@ -413,7 +413,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Find the first ' ' after the URL, since the URL is not padded with any spaces.
 		int playerNameBegin = banchoResponse.IndexOf(' ', banchoResponse.IndexOf("/u/", StringComparison.Ordinal)) + 1;
 
-		string playerName = banchoResponse.Substring(playerNameBegin, 16).TrimEnd();
+		string playerName = banchoResponse.Substring(playerNameBegin, 16).Trim();
 
 		// Bancho may send extra player info after the name, for example "[Host / HardRock]", after the 16
 		// character player name bit.
