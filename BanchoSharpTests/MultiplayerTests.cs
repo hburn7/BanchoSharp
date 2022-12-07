@@ -62,6 +62,10 @@ public class MultiplayerTests
 	private string _hostChanged(string name) => $"{name} became the host.";
 	private string _beatmapChanged(string title, string diff, int id) => $"Beatmap changed to: {title} [{diff}] (https://osu.ppy.sh/b/{id})";
 
+	private BanchoClient DefaultConfig() => new();
+	private MultiplayerLobby DefaultLobby() => new(DefaultConfig(), 1, "test");
+
+	
 	[SetUp]
 	public void Setup()
 	{
@@ -93,8 +97,59 @@ public class MultiplayerTests
 	}
 
 	[Test]
-	public void TestMpSettings()
+	public async Task TestMultiplayerSizeTracking()
 	{
+		var mp = DefaultLobby();
 		
+		Assert.That(mp.Players.Count, Is.EqualTo(0));
+		Assert.That(mp.PlayerCount, Is.EqualTo(0));
+		mp.Players.Add(new MultiplayerPlayer("Foo", 1, TeamColor.Blue));
+		
+		Assert.That(mp.Players.Count, Is.EqualTo(1));
+		Assert.That(mp.PlayerCount, Is.EqualTo(1));
+		mp.Players.Add(new MultiplayerPlayer("Foo", 2, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer("Bar", 3, TeamColor.Red));
+		
+		Assert.That(mp.Players.Count, Is.EqualTo(3));
+		Assert.That(mp.PlayerCount, Is.EqualTo(3));
+
+		await mp.KickAsync("Foo");
+		Assert.That(mp.Players.Count, Is.EqualTo(2));
+		Assert.That(mp.PlayerCount, Is.EqualTo(2));
 	}
+
+	[Test]
+	public async Task TestKickRemovesPlayerAsync()
+	{
+		var mp = DefaultLobby();
+		mp.Players.Add(new MultiplayerPlayer("Foo", 1, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer("Bar", 2, TeamColor.Red));
+
+		await mp.KickAsync("Foo");
+		Assert.Multiple(() =>
+		{
+			Assert.That(mp.Players, Has.Count.EqualTo(1));
+			Assert.That(mp.PlayerCount, Is.EqualTo(1));
+			Assert.That(mp.Players.FirstOrDefault()?.Name, Is.EqualTo("Bar"));
+			Assert.That(mp.Players.FirstOrDefault()?.Slot, Is.EqualTo(2));
+		});
+
+		await mp.KickAsync("Bar");
+		Assert.Multiple(() =>
+		{
+			Assert.That(mp.Players, Is.Empty);
+			Assert.That(mp.PlayerCount, Is.EqualTo(0));
+		});
+	}
+
+	// [Test]
+	// public async Task TestMpSettings()
+	// {
+	// 	var mp = DefaultLobby();
+	// 	
+	// 	mp.OnHostChangingMap += () =>
+	// 	{
+	// 		
+	// 	};
+	// }
 }
