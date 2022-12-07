@@ -33,8 +33,4 @@ public class MultiplayerPlayer
 
 	public override int GetHashCode() => Name.GetHashCode();
 	public bool Equals(MultiplayerPlayer other) => this.Name.Equals(other.Name);
-	public static bool operator ==(MultiplayerPlayer p1, MultiplayerPlayer p2) => p1.Name.Equals(p2.Name);
-	public static bool operator !=(MultiplayerPlayer p1, MultiplayerPlayer p2) => !(p1 == p2);
-	public static bool operator ==(MultiplayerPlayer p1, string name2) => p1.Name.Equals(name2);
-	public static bool operator !=(MultiplayerPlayer p1, string name2) => !p1.Name.Equals(name2);
 }
