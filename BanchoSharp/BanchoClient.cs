@@ -363,7 +363,7 @@ public class BanchoClient : IBanchoClient
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
-	protected virtual void Dispose(bool disposing)
+	protected void Dispose(bool disposing)
 	{
 		// In the event we inherit from this class, if necessary, this would be overridden
 		// and further resources should be disposed.
