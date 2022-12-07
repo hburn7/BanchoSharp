@@ -19,9 +19,13 @@ public interface IMultiplayerLobby : IChatChannel
 	/// </summary>
 	public string HistoryUrl { get; }
 	/// <summary>
-	///  The current size of the lobby
+	///  The current lobby capacity
 	/// </summary>
 	public int Size { get; }
+	/// <summary>
+	/// The number of players present in the lobby currently
+	/// </summary>
+	public int PlayerCount { get; }
 	/// <summary>
 	///  The current host of the lobby
 	/// </summary>
@@ -59,6 +63,7 @@ public interface IMultiplayerLobby : IChatChannel
 	public event Action<PlayerChangedTeamEventArgs> OnPlayerChangedTeam;
 	public event Action<PlayerSlotMoveEventArgs> OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs> OnPlayerDisconnected;
+	public event Action<PlayerKickedEventArgs> OnPlayerKicked;
 	/// <summary>
 	///  Invoked when the host is selecting a new map
 	/// </summary>

@@ -79,6 +79,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		OnPlayerJoined += player => Players.Add(player);
 		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
+		OnPlayerKicked += kickedEventArgs => Players.Remove(kickedEventArgs.Player);
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -96,11 +97,13 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerChangedTeamEventArgs>? OnPlayerChangedTeam;
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
+	public event Action<PlayerKickedEventArgs>? OnPlayerKicked;
 	public event Action? OnHostChangingMap;
 	public long Id { get; }
 	public string Name { get; private set; }
 	public string HistoryUrl => $"https://osu.ppy.sh/mp/{Id}";
 	public int Size { get; private set; } = 1;
+	public int PlayerCount => Players.Count;
 	public MultiplayerPlayer? Host { get; private set; }
 	public bool HostIsChangingMap { get; private set; }
 	public bool MatchInProgress { get; private set; }
@@ -214,7 +217,18 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task StartAsync() => await SendAsync("!mp start");
-	public async Task KickAsync(string username) => await SendAsync($"!mp kick {username}");
+
+	public async Task KickAsync(string username)
+	{
+		await SendAsync($"!mp kick {username}");
+		
+		// todo: remove if banchobot sends a chat notification for this
+		var player = FindPlayer(username);
+		if (player != null)
+		{
+			OnPlayerKicked?.Invoke(new PlayerKickedEventArgs(player, DateTime.Now));
+		}
+	}
 	public async Task BanAsync(string username) => await SendAsync($"!mp ban {username}");
 
 	public async Task AddRefereeAsync(params string[] usernames)
@@ -341,6 +355,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
+	// todo: check if needed --> private bool IsPlayerKickedNotification(string banchoResponse) => banchoResponse.Contains("");
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
 	
@@ -356,7 +371,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		Name = name;
 	}
 
-	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	private MultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
 	private WinCondition ParseWinCondition(string wc) => wc switch
 	{
