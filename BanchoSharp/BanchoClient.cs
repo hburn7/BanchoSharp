@@ -225,6 +225,15 @@ public class BanchoClient : IBanchoClient
 				var channel = new Channel(channelName, ClientConfig.SaveMessags);
 				
 				Channels.Add(channel);
+
+				if (channelName.StartsWith("#mp_"))
+				{
+					// Don't add a multiplayer lobby here. We do this elsewhere.
+					// If this check isn't here, it will add a "dumb" IChatChannel
+					// insted of a sophistocated IMultiplayerLobby
+					return;
+				}
+				
 				OnChannelJoined?.Invoke(channel);
 			}
 			else if (m.Command == "403")

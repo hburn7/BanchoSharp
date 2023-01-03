@@ -89,6 +89,7 @@ public class MultiplayerTests
 				Assert.That(lobby.Name, Is.EqualTo("test with spaces 9nd 4umber5"));
 				Assert.That(lobby.ChannelName, Is.EqualTo("#mp_104889872"));
 				Assert.That(lobby.HistoryUrl, Is.EqualTo("https://osu.ppy.sh/mp/104889872"));
+				Assert.That(_client.Channels.Contains(lobby));
 			});
 		};
 

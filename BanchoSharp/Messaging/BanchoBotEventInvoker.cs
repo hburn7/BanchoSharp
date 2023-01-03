@@ -7,7 +7,12 @@ public class BanchoBotEventInvoker : IBanchoBotEventInvoker, IBanchoBotEvents
 {
 	private readonly IBanchoClient _client;
 
-	public BanchoBotEventInvoker(IBanchoClient client) { _client = client; }
+	public BanchoBotEventInvoker(IBanchoClient client)
+	{
+		_client = client;
+
+		OnTournamentLobbyCreated += lobby => Logger.Info($"Joined tournament lobby: {lobby}");
+	}
 
 	public void ProcessMessage(IPrivateIrcMessage msg)
 	{
@@ -30,6 +35,7 @@ public class BanchoBotEventInvoker : IBanchoBotEventInvoker, IBanchoBotEvents
 			}
 			
 			var mp = new MultiplayerLobby(_client, long.Parse(lobbyId), name);
+			_client.Channels.Add(mp);
 			OnTournamentLobbyCreated?.Invoke(mp);
 		}
 	}
