@@ -160,6 +160,12 @@ public class BanchoClient : IBanchoClient
 
 	private void RegisterEvents()
 	{
+		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
+		{
+			Logger.Info($"Joined tournament lobby: {mp}");
+			OnChannelJoined?.Invoke(mp);
+		};
+		
 		OnConnected += () => Logger.Info("Client connected");
 		OnDisconnected += () =>
 		{
@@ -181,7 +187,12 @@ public class BanchoClient : IBanchoClient
 		};
 
 		OnChannelJoined += c => Logger.Info($"Joined channel {c}");
-		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
+		OnChannelJoinFailure += c =>
+		{
+			Logger.Info($"Failed to join channel {c}");
+			RemoveChannel(c);
+			Logger.Debug($"Removed channel {c} from memory");
+		};
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Queried {u}");
 
@@ -224,8 +235,6 @@ public class BanchoClient : IBanchoClient
 				
 				var channel = new Channel(channelName, ClientConfig.SaveMessags);
 				
-				Channels.Add(channel);
-
 				if (channelName.StartsWith("#mp_"))
 				{
 					// Don't add a multiplayer lobby here. We do this elsewhere.
@@ -234,6 +243,7 @@ public class BanchoClient : IBanchoClient
 					return;
 				}
 				
+				Channels.Add(channel);
 				OnChannelJoined?.Invoke(channel);
 			}
 			else if (m.Command == "403")
