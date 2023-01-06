@@ -43,7 +43,7 @@ public class BeatmapShell
 /// <summary>
 ///  Note: This class is untested and is not officially supported yet.
 /// </summary>
-public class MultiplayerLobby : Channel, IMultiplayerLobby
+public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 {
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
@@ -69,17 +69,31 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			ResetLobbyTimer();
 			ResetMatchTimer();
+			InvokeOnStateChanged();
 		};
 
 		OnMatchFinished += () =>
 		{
 			ResetLobbyTimer();
 			ResetMatchTimer();
+			InvokeOnStateChanged();
 		};
 
-		OnPlayerJoined += player => Players.Add(player);
-		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
-		OnPlayerKicked += kickedEventArgs => Players.Remove(kickedEventArgs.Player);
+		OnPlayerJoined += player =>
+		{
+			Players.Add(player);
+			InvokeOnStateChanged();
+		};
+		OnPlayerDisconnected += disconnectedEventArgs =>
+		{
+			Players.Remove(disconnectedEventArgs.Player);
+			InvokeOnStateChanged();
+		};
+		OnPlayerKicked += kickedEventArgs =>
+		{
+			Players.Remove(kickedEventArgs.Player);
+			InvokeOnStateChanged();
+		};
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -131,12 +145,15 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		GameMode = gameMode.Value;
 
 		await SendAsync($"!mp set {(int)format} {(int)winCondition} {(int)gameMode}");
+		InvokeOnStateChanged();
 	}
 
 	public async Task AbortAsync()
 	{
 		await SendAsync("!mp abort");
 		MatchInProgress = false;
+		
+		InvokeOnStateChanged();
 	}
 
 	public async Task AbortTimerAsync()
@@ -145,6 +162,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		ResetLobbyTimer();
 		ResetMatchTimer();
 		OnLobbyTimerFinished?.Invoke();
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task DisplaySettingsAsync() => await SendAsync("!mp settings");
@@ -153,14 +172,19 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		await SendAsync($"!mp size {newSize}");
 		Size = newSize;
+		InvokeOnStateChanged();
+
 	}
 
+	// todo: track player slots here
 	public async Task MoveAsync(string player, int slot) => await SendAsync($"!mp move {player} {slot}");
 
 	public async Task RenameAsync(string newName)
 	{
 		await SendAsync($"!mp name {newName}");
 		Name = newName;
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task InviteAsync(string username) => await SendAsync($"!mp invite {username}");
@@ -169,12 +193,16 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		await SendAsync("!mp lock");
 		IsLocked = true;
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task UnlockAsync()
 	{
 		await SendAsync("!mp unlock");
 		IsLocked = false;
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task CloseAsync()
@@ -183,12 +211,16 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		IsClosed = true;
 		_client.Channels.Remove(this);
 		OnClosed?.Invoke();
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task ClearHostAsync()
 	{
 		await SendAsync("!mp clearhost");
 		Host = null;
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task SetHostAsync(string username)
@@ -197,8 +229,11 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		Host = FindPlayer(username);
 
 		OnHostChanged?.Invoke(Host!);
+		InvokeOnStateChanged();
+
 	}
 
+	// todo: probably needs an associated event
 	public async Task SetModsAsync(params string[] mods) => await SendAsync($"!mp mods {string.Join(" ", mods)}");
 	public async Task SetModsAsync(string mods) => await SendAsync($"!mp mods {mods}");
 
@@ -207,6 +242,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		await SendAsync($"!mp timer {seconds}");
 		_lobbyTimerEnd = DateTime.Now.AddSeconds(seconds);
 		OnLobbyTimerStarted?.Invoke(seconds);
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task SetMatchStartTimerAsync(int seconds)
@@ -214,6 +251,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		await SendAsync($"!mp start {seconds}");
 		_matchTimerEnd = DateTime.Now.AddSeconds(seconds);
 		OnMatchStartTimerStarted?.Invoke(seconds);
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task StartAsync() => await SendAsync("!mp start");
@@ -228,6 +267,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnPlayerKicked?.Invoke(new PlayerKickedEventArgs(player, DateTime.Now));
 		}
+		InvokeOnStateChanged();
+
 	}
 	public async Task BanAsync(string username) => await SendAsync($"!mp ban {username}");
 
@@ -235,12 +276,16 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		await SendAsync($"!mp addref {string.Join(" ", usernames)}");
 		Referees.AddRange(usernames);
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task RemoveRefereesAsync(params string[] usernames)
 	{
 		await SendAsync($"!mp removeref {string.Join(" ", usernames)}");
 		Referees.RemoveAll(usernames.Contains);
+		InvokeOnStateChanged();
+
 	}
 
 	public async Task SetMapAsync(BeatmapShell beatmap)
@@ -336,6 +381,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnMatchAborted?.Invoke();
 		}
+
+		InvokeOnStateChanged();
 	}
 
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
@@ -369,6 +416,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		string name = nameSub.Split(':')[1].Trim();
 
 		Name = name;
+		InvokeOnStateChanged();
 	}
 
 	private MultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -417,6 +465,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnHostChanged?.Invoke(Host);
 			}
 		}
+		
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerInformation(string banchoResponse)
@@ -551,6 +601,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnSettingsUpdated?.Invoke();
 		}
+		
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayersRemaining(string banchoResponse)
@@ -568,6 +620,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			_playersRemainingCount = playerCount;
 		}
+		
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerSlotMove(string banchoResponse)
@@ -589,6 +643,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		player.Slot = slotNum;
 
 		OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+		InvokeOnStateChanged();
 	}
 
 	// Handles joining in a slot *and* joining in a team slot.
@@ -609,6 +664,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
 			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
 		}
+		
+		InvokeOnStateChanged();
 	}
 
 	private void UpdateHostChangedBeatmap(string banchoResponse)
@@ -619,6 +676,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
 
 		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), GameMode));
+		InvokeOnStateChanged();
 	}
 
 	private void UpdateFormatWincondition(string banchoResponse)
@@ -636,6 +694,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		WinCondition = ParseWinCondition(winCondition);
 		Format = ParseFormat(format);
+		InvokeOnStateChanged();
 	}
 
 	private void UpdateMatchMods(string banchoResponse)
@@ -697,6 +756,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
 		}
+		
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerResults(string banchoResponse)
@@ -719,6 +780,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		player.Score = score;
 		player.Passed = resultStr.Contains("PASSED");
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerDisconnect(string banchoResponse)
@@ -733,6 +795,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 
 		OnPlayerDisconnected?.Invoke(new PlayerDisconnectedEventArgs(player, DateTime.Now));
+		InvokeOnStateChanged();
 	}
 #endregion
+
+	public event Action? OnStateChanged;
+	public void InvokeOnStateChanged() => OnStateChanged?.Invoke();
 }

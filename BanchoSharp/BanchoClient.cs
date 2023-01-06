@@ -85,10 +85,22 @@ public class BanchoClient : IBanchoClient
 
 	public async Task JoinChannelAsync(string name)
 	{
-		await Execute($"JOIN {name}");
+		if (ContainsChannel(name))
+		{
+			return;
+		}
+		
+		if (name.StartsWith("#"))
+		{
+			await Execute($"JOIN {name}");
 
-		var channel = AddChannel(name);
-		OnChannelJoined?.Invoke(channel);
+			var channel = AddChannel(name);
+			OnChannelJoined?.Invoke(channel);
+		}
+		else
+		{
+			await QueryUserAsync(name);
+		}
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -143,6 +155,12 @@ public class BanchoClient : IBanchoClient
 
 	private IChatChannel AddChannel(string channelName)
 	{
+		if (ContainsChannel(channelName))
+		{
+			Logger.Debug($"Attempt was made to add channel that is already present (ignoring). [{channelName}]");
+			return GetChannel(channelName)!;
+		}
+		
 		var ch = new Channel(channelName, ClientConfig.SaveMessags);
 		Channels.Add(ch);
 		Logger.Debug($"Channel added in memory: {ch}");
@@ -163,6 +181,8 @@ public class BanchoClient : IBanchoClient
 		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
 		{
 			Logger.Info($"Joined tournament lobby: {mp}");
+			Channels.Add(mp);
+			Logger.Debug($"Added tournament lobby channel to memory: {mp}");
 			OnChannelJoined?.Invoke(mp);
 		};
 		
@@ -249,6 +269,14 @@ public class BanchoClient : IBanchoClient
 			else if (m.Command == "403")
 			{
 				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
+
+				if (!failedChannel.StartsWith("#"))
+				{
+					// Users that are offline and being DM'd need to not be removed.
+					// Bancho gives the error even though this type of communication is fine.
+					return;
+				}
+				
 				OnChannelJoinFailure?.Invoke(failedChannel);
 			}
 			else if (m.Command == "PING")

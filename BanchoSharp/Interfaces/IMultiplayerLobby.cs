@@ -1,9 +1,10 @@
 using BanchoSharp.EventArgs;
 using BanchoSharp.Multiplayer;
+using System.ComponentModel;
 
 namespace BanchoSharp.Interfaces;
 
-public interface IMultiplayerLobby : IChatChannel
+public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 {
 	/// <summary>
 	/// The ID of the multiplayer lobby. This is the value at the end of the "mp link" (https://osu.ppy.sh/mp/ID)
