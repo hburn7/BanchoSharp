@@ -381,6 +381,16 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnMatchAborted?.Invoke();
 		}
+		else if (IsMatchSizeNotification(banchoResponse))
+		{
+			if (!int.TryParse(banchoResponse.Split().Last(), out int size))
+			{
+				Logger.Warn($"Could not parse size from bancho bot match size notification: '{banchoResponse}'");
+				return;
+			}
+			
+			Size = size;
+		}
 
 		InvokeOnStateChanged();
 	}
@@ -405,6 +415,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	// todo: check if needed --> private bool IsPlayerKickedNotification(string banchoResponse) => banchoResponse.Contains("");
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
+	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
 	
 	private void UpdateName(string banchoResponse)
 	{
