@@ -81,20 +81,23 @@ public class MultiplayerTests
 		var msg = PrivateIrcMessage.CreateFromParameters("BanchoBot", "Dummy", content);
 
 		bool invoked = false;
+		IMultiplayerLobby lobbyValid = null!;
 		_events.OnTournamentLobbyCreated += lobby =>
 		{
+			lobbyValid = lobby;
 			invoked = true;
 			Assert.Multiple(() =>
 			{
 				Assert.That(lobby.Name, Is.EqualTo("test with spaces 9nd 4umber5"));
 				Assert.That(lobby.ChannelName, Is.EqualTo("#mp_104889872"));
 				Assert.That(lobby.HistoryUrl, Is.EqualTo("https://osu.ppy.sh/mp/104889872"));
-				Assert.That(_client.Channels.Contains(lobby));
 			});
 		};
 
 		_invoker.ProcessMessage(msg);
 		Assert.That(invoked, Is.True);
+		Assert.That(lobbyValid, Is.Not.Null);
+		Assert.That(_client.Channels.Contains(lobbyValid!));
 	}
 
 	[Test]
@@ -104,12 +107,12 @@ public class MultiplayerTests
 		
 		Assert.That(mp.Players.Count, Is.EqualTo(0));
 		Assert.That(mp.PlayerCount, Is.EqualTo(0));
-		mp.Players.Add(new MultiplayerPlayer("Foo", 1, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Blue));
 		
 		Assert.That(mp.Players.Count, Is.EqualTo(1));
 		Assert.That(mp.PlayerCount, Is.EqualTo(1));
-		mp.Players.Add(new MultiplayerPlayer("Foo", 2, TeamColor.Blue));
-		mp.Players.Add(new MultiplayerPlayer("Bar", 3, TeamColor.Red));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 2, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Bar", 3, TeamColor.Red));
 		
 		Assert.That(mp.Players.Count, Is.EqualTo(3));
 		Assert.That(mp.PlayerCount, Is.EqualTo(3));
@@ -123,8 +126,8 @@ public class MultiplayerTests
 	public async Task TestKickRemovesPlayerAsync()
 	{
 		var mp = DefaultLobby();
-		mp.Players.Add(new MultiplayerPlayer("Foo", 1, TeamColor.Blue));
-		mp.Players.Add(new MultiplayerPlayer("Bar", 2, TeamColor.Red));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Bar", 2, TeamColor.Red));
 
 		await mp.KickAsync("Foo");
 		Assert.Multiple(() =>

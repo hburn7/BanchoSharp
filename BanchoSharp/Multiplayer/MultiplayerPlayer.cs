@@ -23,13 +23,16 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 	public bool? Passed { get; set; }
 	public bool IsReady { get; set; }
 
-	public MultiplayerPlayer(string name, int slot, TeamColor team = TeamColor.None, Mods mods = Mods.None)
+	public MultiplayerPlayer(IMultiplayerLobby lobby, string name, int slot, TeamColor team = TeamColor.None, Mods mods = Mods.None)
 	{
+		Lobby = lobby;
 		Name = name;
 		Slot = slot;
 		Team = team;
 		Mods = mods;
 	}
+
+	public IMultiplayerLobby Lobby { get; }
 
 	public override bool Equals(object? other) => other?.GetType() == typeof(MultiplayerPlayer) && 
 	                                              this.Name.Equals((other as MultiplayerPlayer)!.Name);

@@ -12,6 +12,7 @@ public interface IMultiplayerPlayer
 	int? Score { get; set; }
 	bool? Passed { get; set; }
 	bool IsReady { get; set; }
+	IMultiplayerLobby Lobby { get; }
 	bool Equals(object? other);
 	bool Equals(MultiplayerPlayer other);
 	int GetHashCode();

@@ -508,7 +508,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(playerName, slot)
+			player = new MultiplayerPlayer(this, playerName, slot)
 			{
 				Id = playerId
 			};
@@ -651,7 +651,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(name, slotNum);
+			player = new MultiplayerPlayer(this, name, slotNum);
 			Players.Add(player);
 		}
 		
@@ -673,12 +673,12 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
 			string team = banchoResponse.Split(" for team ")[1][..^1];
 			var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
-			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum, color));
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(this, playerName, slotNum, color));
 		}
 		else
 		{
 			int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
-			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(this, playerName, slotNum));
 		}
 		
 		InvokeOnStateChanged();
