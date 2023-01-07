@@ -304,7 +304,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
-	public event Action? OnAllPlayersReady;
+	public event Action OnAllPlayersReady;
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
@@ -494,6 +494,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// character player name bit.
 		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
 
+		
 		int? playerId = null;
 		
 		// Attempt to find the digits from "/u/" to where the name begins, which is the player id.
@@ -504,6 +505,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		
 		var player = FindPlayer(playerName);
 
+		
 		if (player is null)
 		{
 			player = new MultiplayerPlayer(playerName, slot)
@@ -524,6 +526,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 		}
 		
+		bool isReady = !(banchoResponse[..playerNameBegin].Contains("Not Ready"));
+
+		player.IsReady = isReady;
 		player.Id = playerId;
 
 		if (playerInfo != null)

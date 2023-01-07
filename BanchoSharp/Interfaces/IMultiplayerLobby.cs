@@ -54,6 +54,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	public event Action OnMatchStarted;
 	public event Action OnMatchFinished;
 	public event Action OnClosed;
+	public event Action OnAllPlayersReady;
 	public event Action<MultiplayerPlayer> OnHostChanged;
 	public event Action<BeatmapShell> OnBeatmapChanged;
 	public event Action<MultiplayerPlayer> OnPlayerJoined;

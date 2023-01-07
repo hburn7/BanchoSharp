@@ -1,3 +1,5 @@
+using BanchoSharp.Interfaces;
+
 namespace BanchoSharp.Multiplayer;
 
 public enum TeamColor
@@ -7,7 +9,7 @@ public enum TeamColor
 	None
 }
 
-public class MultiplayerPlayer
+public class MultiplayerPlayer : IMultiplayerPlayer
 {
 	public int? Id { get; set; }
 	public string Name { get; }
@@ -19,6 +21,7 @@ public class MultiplayerPlayer
 
 	public int? Score { get; set; }
 	public bool? Passed { get; set; }
+	public bool IsReady { get; set; }
 
 	public MultiplayerPlayer(string name, int slot, TeamColor team = TeamColor.None, Mods mods = Mods.None)
 	{
