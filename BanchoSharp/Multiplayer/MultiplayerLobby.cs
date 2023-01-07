@@ -166,7 +166,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	}
 
-	public async Task DisplaySettingsAsync() => await SendAsync("!mp settings");
+	public async Task RefreshSettingsAsync() => await SendAsync("!mp settings");
 
 	public async Task SetSizeAsync(int newSize)
 	{

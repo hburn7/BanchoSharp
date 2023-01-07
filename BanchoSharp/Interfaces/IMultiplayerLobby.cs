@@ -75,7 +75,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 
 	public Task AbortAsync();
 	public Task AbortTimerAsync();
-	public Task DisplaySettingsAsync();
+	public Task RefreshSettingsAsync();
 	public Task SetSizeAsync(int newSize);
 	public Task MoveAsync(string player, int slot);
 	public Task RenameAsync(string newName);
