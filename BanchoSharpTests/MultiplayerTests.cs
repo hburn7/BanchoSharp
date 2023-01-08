@@ -25,8 +25,6 @@ public class MultiplayerTests
 	private const string _mpAbort = "Aborted the match";
 	
 	private IBanchoClient _client;
-	private IBanchoBotEvents _events;
-	private IBanchoBotEventInvoker _invoker;
 	private string _mpHost(string name) => $"Changed match host to {name}";
 	private string _mpMap(string id) => $"Changed beatmap to https://osu.ppy.sh/b/{id} EXAMPLE ARTIST - EXAMPLE TITLE";
 
@@ -70,8 +68,6 @@ public class MultiplayerTests
 	public void Setup()
 	{
 		_client = new BanchoClient();
-		_invoker = new BanchoBotEventInvoker(_client);
-		_events = (IBanchoBotEvents)_invoker;
 	}
 
 	[Test]
@@ -81,23 +77,20 @@ public class MultiplayerTests
 		var msg = PrivateIrcMessage.CreateFromParameters("BanchoBot", "Dummy", content);
 
 		bool invoked = false;
-		IMultiplayerLobby lobbyValid = null!;
-		_events.OnTournamentLobbyCreated += lobby =>
+		_client.BanchoBotEvents.OnTournamentLobbyCreated += lobby =>
 		{
-			lobbyValid = lobby;
 			invoked = true;
 			Assert.Multiple(() =>
 			{
 				Assert.That(lobby.Name, Is.EqualTo("test with spaces 9nd 4umber5"));
 				Assert.That(lobby.ChannelName, Is.EqualTo("#mp_104889872"));
 				Assert.That(lobby.HistoryUrl, Is.EqualTo("https://osu.ppy.sh/mp/104889872"));
+				Assert.That(_client.Channels.Contains(lobby));
 			});
 		};
 
-		_invoker.ProcessMessage(msg);
+		((IBanchoBotEventInvoker)_client.BanchoBotEvents).ProcessMessage(msg);
 		Assert.That(invoked, Is.True);
-		Assert.That(lobbyValid, Is.Not.Null);
-		Assert.That(_client.Channels.Contains(lobbyValid!));
 	}
 
 	[Test]
