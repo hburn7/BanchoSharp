@@ -1,15 +1,15 @@
-﻿using BanchoSharp.Multiplayer;
+﻿using BanchoSharp.Interfaces;
 
 namespace BanchoSharp.EventArgs;
 
 public class PlayerKickedEventArgs : System.EventArgs
 {
-	public PlayerKickedEventArgs(MultiplayerPlayer player, DateTime kickTime)
+	public PlayerKickedEventArgs(IMultiplayerPlayer player, DateTime kickTime)
 	{
 		Player = player;
 		KickTime = kickTime;
 	}
 
-	public MultiplayerPlayer Player { get; }
+	public IMultiplayerPlayer Player { get; }
 	public DateTime KickTime { get; }
 }

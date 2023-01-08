@@ -29,7 +29,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	/// <summary>
 	///  The current host of the lobby
 	/// </summary>
-	public MultiplayerPlayer? Host { get; }
+	public IMultiplayerPlayer? Host { get; }
 	public bool HostIsChangingMap { get; }
 	public bool MatchInProgress { get; }
 	public bool IsLocked { get; }
@@ -41,7 +41,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	public LobbyFormat Format { get; }
 	public WinCondition WinCondition { get; }
 	public GameMode GameMode { get; }
-	public List<MultiplayerPlayer> Players { get; }
+	public List<IMultiplayerPlayer> Players { get; }
 	public List<string> Referees { get; }
 	public Mods Mods { get; }
 	public event Action OnSettingsUpdated;
@@ -54,9 +54,9 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	public event Action OnMatchFinished;
 	public event Action OnClosed;
 	public event Action OnAllPlayersReady;
-	public event Action<MultiplayerPlayer> OnHostChanged;
+	public event Action<IMultiplayerPlayer> OnHostChanged;
 	public event Action<BeatmapShell> OnBeatmapChanged;
-	public event Action<MultiplayerPlayer> OnPlayerJoined;
+	public event Action<IMultiplayerPlayer> OnPlayerJoined;
 	/// <summary>
 	///  Invoked when the player changes their team color. The previous team color
 	///  is provided.
@@ -75,23 +75,24 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 
 	public Task AbortAsync();
 	public Task AbortTimerAsync();
+	public IMultiplayerPlayer? FindPlayer(string username);
 	public Task RefreshSettingsAsync();
 	public Task SetSizeAsync(int newSize);
-	public Task MoveAsync(string player, int slot);
+	public Task MoveAsync(IMultiplayerPlayer player, int slot);
 	public Task RenameAsync(string newName);
 	public Task InviteAsync(string username);
 	public Task LockAsync();
 	public Task UnlockAsync();
 	public Task CloseAsync();
 	public Task ClearHostAsync();
-	public Task SetHostAsync(string username);
+	public Task SetHostAsync(IMultiplayerPlayer player);
 	public Task SetModsAsync(params string[] mods);
 	public Task SetModsAsync(string mods);
 	public Task SetTimerAsync(int seconds);
 	public Task SetMatchStartTimerAsync(int seconds);
 	public Task StartAsync();
-	public Task KickAsync(string username);
-	public Task BanAsync(string username);
+	public Task KickAsync(IMultiplayerPlayer player);
+	public Task BanAsync(IMultiplayerPlayer player);
 	public Task AddRefereeAsync(params string[] usernames);
 	public Task RemoveRefereesAsync(params string[] usernames);
 	public Task SetMapAsync(BeatmapShell beatmap);

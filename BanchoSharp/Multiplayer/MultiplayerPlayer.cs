@@ -32,7 +32,8 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 		Mods = mods;
 	}
 
-	public IMultiplayerLobby Lobby { get; }
+	public IMultiplayerLobby? Lobby { get; set; }
+	public string TargetableName() => Id.HasValue ? $"#{Id}" : Name;
 
 	public override bool Equals(object? other) => other?.GetType() == typeof(MultiplayerPlayer) && 
 	                                              this.Name.Equals((other as MultiplayerPlayer)!.Name);

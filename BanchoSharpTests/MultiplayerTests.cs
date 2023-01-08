@@ -61,7 +61,7 @@ public class MultiplayerTests
 	private string _beatmapChanged(string title, string diff, int id) => $"Beatmap changed to: {title} [{diff}] (https://osu.ppy.sh/b/{id})";
 
 	private BanchoClient DefaultConfig() => new();
-	private MultiplayerLobby DefaultLobby() => new(DefaultConfig(), 1, "test");
+	private IMultiplayerLobby DefaultLobby() => new MultiplayerLobby(DefaultConfig(), 1, "test");
 
 	
 	[SetUp]
@@ -94,6 +94,31 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestFindPlayer()
+	{
+		var mp = DefaultLobby();
+
+		var nullMatch = mp.FindPlayer("Foo");
+		Assert.That(nullMatch, Is.Null);
+		
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Red));
+		var match = mp.FindPlayer("Foo");
+		Assert.That(match, Is.Not.Null);
+	}
+
+	[Test]
+	public void TestTargetableName()
+	{
+		var mp = DefaultLobby();
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Red));
+		
+		Assert.That(mp.Players.First().TargetableName().Equals("Foo"));
+
+		mp.Players.First().Id = 123;
+		Assert.That(mp.Players.First().TargetableName().Equals("#123"));
+	}
+
+	[Test]
 	public async Task TestMultiplayerSizeTracking()
 	{
 		var mp = DefaultLobby();
@@ -104,13 +129,13 @@ public class MultiplayerTests
 		
 		Assert.That(mp.Players.Count, Is.EqualTo(1));
 		Assert.That(mp.PlayerCount, Is.EqualTo(1));
-		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 2, TeamColor.Blue));
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo2", 2, TeamColor.Blue));
 		mp.Players.Add(new MultiplayerPlayer(mp, "Bar", 3, TeamColor.Red));
 		
 		Assert.That(mp.Players.Count, Is.EqualTo(3));
 		Assert.That(mp.PlayerCount, Is.EqualTo(3));
 
-		await mp.KickAsync("Foo");
+		await mp.KickAsync(mp.FindPlayer("Foo")!);
 		Assert.That(mp.Players.Count, Is.EqualTo(2));
 		Assert.That(mp.PlayerCount, Is.EqualTo(2));
 	}
@@ -122,7 +147,7 @@ public class MultiplayerTests
 		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Blue));
 		mp.Players.Add(new MultiplayerPlayer(mp, "Bar", 2, TeamColor.Red));
 
-		await mp.KickAsync("Foo");
+		await mp.KickAsync(mp.FindPlayer("Foo")!);
 		Assert.Multiple(() =>
 		{
 			Assert.That(mp.Players, Has.Count.EqualTo(1));
@@ -131,12 +156,25 @@ public class MultiplayerTests
 			Assert.That(mp.Players.FirstOrDefault()?.Slot, Is.EqualTo(2));
 		});
 
-		await mp.KickAsync("Bar");
+		await mp.KickAsync(mp.FindPlayer("Bar")!);
 		Assert.Multiple(() =>
 		{
 			Assert.That(mp.Players, Is.Empty);
 			Assert.That(mp.PlayerCount, Is.EqualTo(0));
 		});
+	}
+	
+	[Test]
+	public async Task TestMultiplayerPlayerLobbyOwnership()
+	{
+		var mp = DefaultLobby();
+		mp.Players.Add(new MultiplayerPlayer(mp, "Foo", 1, TeamColor.Blue));
+		
+		Assert.That(mp.Players.First().Lobby, Is.EqualTo(mp));
+
+		await mp.KickAsync(mp.Players.First());
+		
+		Assert.That(mp.Players.Count == 0);
 	}
 
 	// [Test]

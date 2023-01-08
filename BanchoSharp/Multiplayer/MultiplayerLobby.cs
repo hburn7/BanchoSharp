@@ -105,9 +105,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
 	public event Action? OnClosed;
-	public event Action<MultiplayerPlayer>? OnHostChanged;
+	public event Action<IMultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
-	public event Action<MultiplayerPlayer>? OnPlayerJoined;
+	public event Action<IMultiplayerPlayer>? OnPlayerJoined;
 	public event Action<PlayerChangedTeamEventArgs>? OnPlayerChangedTeam;
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
@@ -118,7 +118,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public string HistoryUrl => $"https://osu.ppy.sh/mp/{Id}";
 	public int Size { get; private set; } = 1;
 	public int PlayerCount => Players.Count;
-	public MultiplayerPlayer? Host { get; private set; }
+	public IMultiplayerPlayer? Host { get; private set; }
 	public bool HostIsChangingMap { get; private set; }
 	public bool MatchInProgress { get; private set; }
 	public bool IsLocked { get; private set; }
@@ -130,7 +130,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public LobbyFormat Format { get; private set; } = LobbyFormat.HeadToHead;
 	public WinCondition WinCondition { get; private set; } = WinCondition.Score;
 	public GameMode GameMode { get; private set; } = GameMode.osu;
-	public List<MultiplayerPlayer> Players { get; } = new();
+	public List<IMultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
 	public Mods Mods { get; private set; } = Mods.None;
 
@@ -163,9 +163,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		ResetMatchTimer();
 		OnLobbyTimerFinished?.Invoke();
 		InvokeOnStateChanged();
-
 	}
 
+	IMultiplayerPlayer? IMultiplayerLobby.FindPlayer(string username) => FindPlayer(username);
 	public async Task RefreshSettingsAsync() => await SendAsync("!mp settings");
 
 	public async Task SetSizeAsync(int newSize)
@@ -175,6 +175,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		InvokeOnStateChanged();
 
 	}
+
+	public async Task MoveAsync(IMultiplayerPlayer player, int slot) => await SendAsync($"!mp move {player} {slot}");
 
 	// todo: track player slots here
 	public async Task MoveAsync(string player, int slot) => await SendAsync($"!mp move {player} {slot}");
@@ -223,19 +225,18 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	}
 
-	public async Task SetHostAsync(string username)
+	public async Task SetHostAsync(IMultiplayerPlayer player)
 	{
-		await SendAsync($"!mp host {username}");
-		Host = FindPlayer(username);
-
-		OnHostChanged?.Invoke(Host!);
+		await SendAsync($"!mp host {player.TargetableName()}");
+		Host = player;
+		OnHostChanged?.Invoke(player);
 		InvokeOnStateChanged();
-
 	}
 
 	// todo: probably needs an associated event
 	public async Task SetModsAsync(params string[] mods) => await SendAsync($"!mp mods {string.Join(" ", mods)}");
 	public async Task SetModsAsync(string mods) => await SendAsync($"!mp mods {mods}");
+	public async Task SetModsAsync(Mods mods) => await SendAsync($"!mp mods {mods}");
 
 	public async Task SetTimerAsync(int seconds)
 	{
@@ -257,20 +258,16 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	public async Task StartAsync() => await SendAsync("!mp start");
 
-	public async Task KickAsync(string username)
+	public async Task KickAsync(IMultiplayerPlayer player)
 	{
-		await SendAsync($"!mp kick {username}");
+		await SendAsync($"!mp kick {player.TargetableName()}");
+		player.Lobby = null;
 		
-		// todo: remove if banchobot sends a chat notification for this
-		var player = FindPlayer(username);
-		if (player != null)
-		{
-			OnPlayerKicked?.Invoke(new PlayerKickedEventArgs(player, DateTime.Now));
-		}
+		OnPlayerKicked?.Invoke(new PlayerKickedEventArgs(player, DateTime.Now));
 		InvokeOnStateChanged();
-
 	}
-	public async Task BanAsync(string username) => await SendAsync($"!mp ban {username}");
+
+	public async Task BanAsync(IMultiplayerPlayer player) => await SendAsync($"!mp ban {player.TargetableName()}");
 
 	public async Task AddRefereeAsync(params string[] usernames)
 	{
@@ -430,7 +427,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		InvokeOnStateChanged();
 	}
 
-	private MultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	private IMultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	private IMultiplayerPlayer? FindPlayer(IMultiplayerPlayer player) => Players.FirstOrDefault(x => x.Equals(player));
 
 	private WinCondition ParseWinCondition(string wc) => wc switch
 	{
