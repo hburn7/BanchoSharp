@@ -33,31 +33,27 @@ public class SlashCommandHandler : ISlashCommandHandler
 			return;
 		}
 
-		IrcCommand = _prompt.Split('/')[1].Split()[0];
+		Command = _prompt.Split('/')[1].Split()[0];
 
 		if (_splits.Length > 1)
 		{
 			// Params provided
-			RelevantParameters = GetRelevantParamsForCommand();
-			Parameters = GetParameters();
+			Parameters = GetParamsForCommand();
 		}
 		else
 		{
 			// No params provided
-			RelevantParameters = null;
 			Parameters = null;
 		}
 	}
 	
-	public string IrcCommand { get; }
-	public string[]? RelevantParameters { get; }
+	public string? Command { get; }
 	public string[]? Parameters { get; }
-
 	private bool IsSlashCommand() => !string.IsNullOrWhiteSpace(_prompt) &&
 	                                 _prompt.StartsWith("/") &&
 	                                 _prompt.Length > 1;
 
-	private string[] GetRelevantParamsForCommand() => IrcCommand.ToLower() switch
+	private string[]? GetParamsForCommand() => Command.ToLower() switch
 	{
 		"join" => GetFirstArgOrDefault(),
 		"part" => GetFirstArgOrDefault(),
@@ -66,18 +62,11 @@ public class SlashCommandHandler : ISlashCommandHandler
 		"unignore" => GetFirstArgOrDefault(), // Not tested, I do not know if /unignore works. It's here just in case.
 		"away" => GetAllAsStringOrDefault(),
 		"query" => GetFirstArgOrDefault(),
-		_ => Array.Empty<string>()
+		_ => GetSpaceDelimitedArgsOrDefault()
 	};
 
-	private string[] GetParameters() => IrcCommand.ToLower() switch
-	{
-		"me" => GetAllAsStringOrDefault(),
-		"away" => GetAllAsStringOrDefault(),
-		_ => _splits[1..]
-	};
-	
-	private string[] GetFirstArgOrDefault() => _splits.Length >= 2 ? new string[] { _splits[1] } : Array.Empty<string>();
-	private string[] GetAllAsStringOrDefault() => _splits.Length >= 2 ? 
-		new string[] {string.Join(" ", _splits[1..])} // Combine into one string, return as a 1-parameter array containing the string.
-		: Array.Empty<string>();
+	private string[]? GetFirstArgOrDefault() => _splits.Length >= 2 ? new string[] { _splits[1] } : null;
+	// Combine into one string, return as a 1-parameter array containing the string.
+	private string[]? GetAllAsStringOrDefault() => _splits.Length >= 2 ? new string[] {string.Join(" ", _splits[1..])} : null;
+	private string[]? GetSpaceDelimitedArgsOrDefault() => _splits.Any() ? _splits[1..] : null;
 }

@@ -25,7 +25,7 @@ public class SlashComandTests
         ISlashCommandHandler handler = new SlashCommandHandler(prompt);
         
 		string cmd = prompt.Split("/")[1].Split()[0];
-		Assert.That(handler.IrcCommand, Is.EqualTo(cmd));
+		Assert.That(handler.Command, Is.EqualTo(cmd));
 
 		// If the prompt has no parameters, it must be null.
 		// If the prompt has parameters but they are not relevant, the array must be empty.
@@ -46,7 +46,7 @@ public class SlashComandTests
 		
         Assert.Multiple(() =>
         {
-            Assert.That(handler.IrcCommand, Is.EqualTo(cmd));
+            Assert.That(handler.Command, Is.EqualTo(cmd));
             Assert.That(handler.Parameters, Is.EqualTo(parameters));
         });
     }
@@ -62,7 +62,7 @@ public class SlashComandTests
         Assert.Multiple(() =>
         {
             Assert.That(handler.Parameters, Is.EqualTo(null));
-            Assert.That(handler.RelevantParameters, Is.EqualTo(null));
+            Assert.That(handler.Parameters, Is.EqualTo(null));
         });
     }
 
@@ -76,17 +76,17 @@ public class SlashComandTests
 	{
 		ISlashCommandHandler handler = new SlashCommandHandler(prompt);
 
-		switch (handler.IrcCommand!.ToLower())
+		switch (handler.Command!.ToLower())
 		{
-			case "join": Assert.That(handler.RelevantParameters, Is.EqualTo(new string[] { "#osu" }));
+			case "join": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu" }));
 				break;
-			case "part": Assert.That(handler.RelevantParameters, Is.EqualTo(new string[] { "#osu" }));
+			case "part": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu" }));
 				break;
-			case "away": Assert.That(handler.RelevantParameters, Is.EqualTo(new string[] { "I'm afk guys!" }));
+			case "away": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "I'm afk guys!" }));
 				break;
-			case "me": Assert.That(handler.RelevantParameters, Is.EqualTo(new string[] { "Look at me, it's me!" }));
+			case "me": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "Look at me, it's me!" }));
 				break;
-			case "ignore": Assert.That(handler.RelevantParameters, Is.EqualTo(new string[] { "ReallyAnnoyingGuy12" }));
+			case "ignore": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "ReallyAnnoyingGuy12" }));
 				break;
 		}
 	}
@@ -101,11 +101,11 @@ public class SlashComandTests
 	{
 		ISlashCommandHandler handler = new SlashCommandHandler(prompt);
 
-		switch (handler.IrcCommand!.ToLower())
+		switch (handler.Command!.ToLower())
 		{
-			case "join": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu", "with", "other", "args" }));
+			case "join": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu" }));
 				break;
-			case "part": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu", "with", "other", "args" }));
+			case "part": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "#osu" }));
 				break;
 			case "away": Assert.That(handler.Parameters, Is.EqualTo(new string[] { "I'm afk guys!" }));
 				break;
