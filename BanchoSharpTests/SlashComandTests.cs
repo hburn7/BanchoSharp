@@ -115,4 +115,31 @@ public class SlashComandTests
 				break;
 		}
 	}
+	
+	[TestCase("/join #osu")]
+	[TestCase("/part #osu")]
+	[TestCase("/me I'm doing something")]
+	[TestCase("/ignore SomeGuy")]
+	[TestCase("/unignore SomeGuy")]
+	[TestCase("/away I'm afk")]
+	[TestCase("/query SomeGuy")]
+	public void TestIsBanchoCommand(string prompt)
+	{
+		ISlashCommandHandler handler = new SlashCommandHandler(prompt);
+		Assert.That(handler.IsBanchoCommand, Is.True);
+	}
+
+	[TestCase("/somecustomcommand")]
+	[TestCase("/somecustomcommand with args")]
+	[TestCase("/clear")]
+	[TestCase("/chat user")]
+	[TestCase("/queryt user")]
+	[TestCase("/joinn #osu")]
+	[TestCase("/leave #channel")]
+	[TestCase("/unaway")]
+	public void TestIsNotBanchoCommand(string prompt)
+	{
+		ISlashCommandHandler handler = new SlashCommandHandler(prompt);
+		Assert.That(handler.IsBanchoCommand, Is.False);
+	}
 }
