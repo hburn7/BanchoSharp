@@ -34,6 +34,7 @@ public class SlashCommandHandler : ISlashCommandHandler
 		}
 
 		Command = _prompt.Split('/')[1].Split()[0];
+		IsBanchoCommand = Command.ToUpper() is "JOIN" or "PART" or "ME" or "IGNORE" or "UNIGNORE" or "AWAY" or "QUERY";
 
 		if (_splits.Length > 1)
 		{
@@ -49,6 +50,8 @@ public class SlashCommandHandler : ISlashCommandHandler
 	
 	public string? Command { get; }
 	public string[]? Parameters { get; }
+	public bool IsBanchoCommand { get; }
+
 	private bool IsSlashCommand() => !string.IsNullOrWhiteSpace(_prompt) &&
 	                                 _prompt.StartsWith("/") &&
 	                                 _prompt.Length > 1;

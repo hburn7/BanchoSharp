@@ -18,4 +18,8 @@ public interface ISlashCommandHandler
 	/// If the user did not provide any parameters, this value will be null.
 	/// </summary>
 	public string[]? Parameters { get; }
+	/// <summary>
+	/// Returns true if the command is any of the following: JOIN, PART, ME, IGNORE, UNIGNORE, AWAY, or QUERY.
+	/// </summary>
+	public bool IsBanchoCommand { get; }
 }
