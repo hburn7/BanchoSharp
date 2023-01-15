@@ -89,7 +89,8 @@ public class BanchoClient : IBanchoClient
 		{
 			return;
 		}
-		
+
+		name = name.Replace(' ', '_');
 		if (name.StartsWith("#"))
 		{
 			await Execute($"JOIN {name}");
@@ -142,6 +143,8 @@ public class BanchoClient : IBanchoClient
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
 	}
 
+	public void SimulateMessageReceivedAsync(IIrcMessage message) => OnMessageReceived?.Invoke(message);
+
 	private void RemoveChannel(string channelName)
 	{
 		var ch = GetChannel(channelName);
@@ -166,8 +169,12 @@ public class BanchoClient : IBanchoClient
 		Logger.Debug($"Channel added in memory: {ch}");
 		return ch;
 	}
-	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 
+	public IChatChannel? GetChannel(string fullName)
+	{
+		fullName = fullName.Replace(' ', '_');
+		return Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+	}
 	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 	
 	private void RegisterInvokers()

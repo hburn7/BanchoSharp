@@ -30,13 +30,19 @@ public enum GameMode
 
 public class BeatmapShell
 {
-	public BeatmapShell(int id, GameMode? gameMode)
+	public BeatmapShell(int id, string artist, string title, string difficulty, GameMode? gameMode)
 	{
 		Id = id;
+		Artist = artist;
+		Title = title;
+		Difficulty = difficulty;
 		GameMode = gameMode;
 	}
 
 	public int Id { get; }
+	public string Title { get; }
+	public string Artist { get; }
+	public string Difficulty { get; }
 	public GameMode? GameMode { get; }
 }
 
@@ -94,6 +100,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			Players.Remove(kickedEventArgs.Player);
 			InvokeOnStateChanged();
 		};
+
+		OnBeatmapChanged += shell => CurrentBeatmap = shell;
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -119,6 +127,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public int Size { get; private set; } = 1;
 	public int PlayerCount => Players.Count;
 	public IMultiplayerPlayer? Host { get; private set; }
+	public BeatmapShell? CurrentBeatmap { get; private set; }
 	public bool HostIsChangingMap { get; private set; }
 	public bool MatchInProgress { get; private set; }
 	public bool IsLocked { get; private set; }
@@ -322,7 +331,15 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsBeatmapChangedNotification(banchoResponse))
 		{
-			UpdateHostChangedBeatmap(banchoResponse);
+			UpdateBeatmapChanged(banchoResponse);
+		}
+		else if (IsBeatmapSettingsNotification(banchoResponse))
+		{
+			UpdateBeatmapFromMpSettings(banchoResponse);
+		}
+		else if (IsBeatmapMpSetNotification(banchoResponse))
+		{
+			UpdateBeatmapFromMpSet(banchoResponse);
 		}
 		else if (IsPlayerJoinedInSlotNotification(banchoResponse))
 		{
@@ -388,20 +405,22 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			
 			Size = size;
 		}
-
+		
 		InvokeOnStateChanged();
 	}
 
-	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
-	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode: ");
+	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name:");
+	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode:");
 	private bool IsHostChangingMapNotification(string banchoResponse) => banchoResponse.Equals("Host is changing map...");
-	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to: ");
+	private bool IsBeatmapSettingsNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap:");
+	private bool IsBeatmapMpSetNotification(string banchoResponse) => banchoResponse.StartsWith("Changed beatmap to");
+	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to:");
 	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.EndsWith(" became the host.");
 	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
 	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("The match has started!");
 	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
 	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
-	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players: ");
+	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players:");
 
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
@@ -421,7 +440,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Index of where the multiplayer lobby name begins
 		int index = banchoResponse.LastIndexOf(',');
 		string nameSub = banchoResponse[..index];
-		string name = nameSub.Split(':')[1].Trim();
+		string name = nameSub.Split("Room name:")[1].Trim();
 
 		Name = name;
 		InvokeOnStateChanged();
@@ -682,14 +701,62 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		InvokeOnStateChanged();
 	}
 
-	private void UpdateHostChangedBeatmap(string banchoResponse)
+	/// <summary>
+	/// Called when !mp settings displays the current beatmap.
+	/// </summary>
+	/// <param name="banchoResponse"></param>
+	private void UpdateBeatmapFromMpSettings(string banchoResponse)
 	{
+		// throw new NotImplementedException();
+		
+		// Beatmap: https://osu.ppy.sh/b/676065 FLOOR LEGENDS -KAC 2012- - KAC 2012 ULTIMATE MEDLEY -HISTORIA SOUND VOLTEX- [NOVICE]
+		int lastArtistSeparatorIdx = banchoResponse.LastIndexOf(" - ", StringComparison.Ordinal);
+		int titleStartIdx = lastArtistSeparatorIdx + 2;
+		int titleEndIdx = banchoResponse.LastIndexOf(" [", StringComparison.Ordinal);
+		int diffStartIdx = titleEndIdx + 1;
+		int diffEndIdx = banchoResponse.LastIndexOf(']');
+		int lastSlashIdx = banchoResponse.LastIndexOf('/');
+
+		string artistSub = banchoResponse[..lastArtistSeparatorIdx];
+		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
+		string titleSub = banchoResponse[titleStartIdx..titleEndIdx];
+		string diffSub = banchoResponse[diffStartIdx..diffEndIdx];
+
+		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), artistSub, titleSub, diffSub, GameMode));
+		InvokeOnStateChanged();
+	}
+
+	/// <summary>
+	/// Called when !mp set is used to change the beatmap.
+	/// </summary>
+	/// <param name="banchoResponse"></param>
+	private void UpdateBeatmapFromMpSet(string banchoResponse)
+	{
+		// Changed beatmap to https://osu.ppy.sh/b/35165 dBu Music - Border of Life
+		// Only happens via !mp set
+		
+		// throw new NotImplementedException();
+	}
+
+	private void UpdateBeatmapChanged(string banchoResponse)
+	{
+		// Beatmap changed to: Camellia - Feelin Sky (Camellia\'s "200step" Self-remix) [Ambivalence] (https://osu.ppy.sh/b/1314987)
+		// Beatmap changed to: Blue Stahli - Anti You [[[REMAP]]] (https://osu.ppy.sh/b/146540)
 		HostIsChangingMap = false;
 
+		int lastArtistSeparatorIdx = banchoResponse.LastIndexOf(" - ", StringComparison.Ordinal);
+		int titleStartIdx = lastArtistSeparatorIdx + 2;
+		int titleEndIdx = banchoResponse.LastIndexOf(" [", StringComparison.Ordinal);
+		int diffStartIdx = titleEndIdx + 1;
+		int diffEndIdx = banchoResponse.LastIndexOf(']');
 		int lastSlashIdx = banchoResponse.LastIndexOf('/');
-		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
 
-		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), GameMode));
+		string artistSub = banchoResponse[..lastArtistSeparatorIdx];
+		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
+		string titleSub = banchoResponse[titleStartIdx..titleEndIdx];
+		string diffSub = banchoResponse[diffStartIdx..diffEndIdx];
+
+		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), artistSub, titleSub, diffSub, GameMode));
 		InvokeOnStateChanged();
 	}
 

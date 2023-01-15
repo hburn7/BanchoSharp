@@ -6,28 +6,31 @@ namespace BanchoSharpTests;
 
 public class ClientTests
 {
+	private IBanchoClient _client;
+
 	[SetUp]
-	public void Setup() {}
+	public void Setup() => _client = new BanchoClient();
 
 	[Test]
 	public async Task TestJoinChannelAsync()
 	{
-		var client = new BanchoClient();
 		string[] channels = { "#osu", "The Omy Nomy Does Not Exist" };
 
 		foreach (string channel in channels)
 		{
-			await client.JoinChannelAsync(channel);
+			await _client.JoinChannelAsync(channel);
 
 			Assert.Multiple(() =>
 			{
-				var ch = client.GetChannel(channel);
+				var ch = _client.GetChannel(channel);
 				Assert.That(ch, Is.Not.Null);
 
 #pragma warning disable CS8602
-				Assert.That(client.ContainsChannel(ch.ChannelName));
-				Assert.That(ch.ChannelName, Is.EqualTo(channel));
+				Assert.That(_client.ContainsChannel(ch.ChannelName));
+				Assert.That(ch.ChannelName, Is.EqualTo(channel.Replace(' ', '_')));
 #pragma warning restore CS8602
+
+				Assert.That(_client.Channels.All(x => !x.ChannelName.Contains(' ')));
 			});
 		}
 	}
@@ -35,36 +38,32 @@ public class ClientTests
 	[Test]
 	public async Task TestPartChannelAsync()
 	{
-		var client = new BanchoClient();
+		await _client.JoinChannelAsync("#osu");
+		await _client.JoinChannelAsync("#english");
+		await _client.JoinChannelAsync("#mp_128498");
+		await _client.JoinChannelAsync("Some random guy");
+		await _client.JoinChannelAsync("#some_random_guy");
 
-		await client.JoinChannelAsync("#osu");
-		await client.JoinChannelAsync("#english");
-		await client.JoinChannelAsync("#mp_128498");
-		await client.JoinChannelAsync("Some random guy");
-		await client.JoinChannelAsync("#some_random_guy");
+		Assert.That(_client.Channels.Count, Is.GreaterThan(0));
 
-		Assert.That(client.Channels.Count, Is.GreaterThan(0));
-
-		foreach (var channel in client.Channels.ToList())
+		foreach (var channel in _client.Channels.ToList())
 		{
-			await client.PartChannelAsync(channel.ChannelName);
-			Assert.That(client.GetChannel(channel.ChannelName), Is.Null);
+			await _client.PartChannelAsync(channel.ChannelName);
+			Assert.That(_client.GetChannel(channel.ChannelName), Is.Null);
 		}
 	}
 
 	[Test]
 	public async Task TestQueryUser()
 	{
-		var client = new BanchoClient();
+		await _client.QueryUserAsync("Stage");
+		await _client.QueryUserAsync("TheOmyNomy");
+		await _client.QueryUserAsync("Peach");
+		await _client.QueryUserAsync("Mario");
 
-		await client.QueryUserAsync("Stage");
-		await client.QueryUserAsync("TheOmyNomy");
-		await client.QueryUserAsync("Peach");
-		await client.QueryUserAsync("Mario");
+		Assert.That(_client.Channels, Has.Count.EqualTo(4));
 
-		Assert.That(client.Channels, Has.Count.EqualTo(4));
-
-		foreach (var channel in client.Channels)
+		foreach (var channel in _client.Channels)
 		{
 			Assert.That(channel is {} chatCh && chatCh.ChannelName == channel.ChannelName);
 		}
@@ -73,19 +72,17 @@ public class ClientTests
 	[Test]
 	public async Task TestMessageHistory()
 	{
-		var client = new BanchoClient();
-
 		IChatChannel[] channels = { new Channel("TheOmyNomy", true), 
-			new Channel("#osu", true), new MultiplayerLobby(client, 123, "awesome tournament 5") };
+			new Channel("#osu", true), new MultiplayerLobby(_client, 123, "awesome tournament 5") };
 
 		foreach (var channel in channels)
 		{
 			Assert.That(channel.MessageHistory, Is.Not.Null);
-			await client.JoinChannelAsync(channel.ChannelName);
-			await client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
+			await _client.JoinChannelAsync(channel.ChannelName);
+			await _client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
 		}
 
-		foreach (var channel in client.Channels.ToList())
+		foreach (var channel in _client.Channels.ToList())
 		{
 			Assert.That(channel.MessageHistory!.Count, Is.GreaterThan(0));
 		}
@@ -94,23 +91,22 @@ public class ClientTests
 	[Test]
 	public async Task TestInvalidMessageHistory()
 	{
-		var client = new BanchoClient();
-		client.ClientConfig = new BanchoClientConfig(new IrcCredentials(), LogLevel.Debug, false);
+		_client.ClientConfig = new BanchoClientConfig(new IrcCredentials(), LogLevel.Debug, false);
 
-		IChatChannel[] channels = { new Channel("TheOmyNomy", client.ClientConfig.SaveMessags), 
-			new Channel("#osu", client.ClientConfig.SaveMessags), new MultiplayerLobby(client, 123, "awesome tournament 5") };
+		IChatChannel[] channels = { new Channel("TheOmyNomy", _client.ClientConfig.SaveMessags), 
+			new Channel("#osu", _client.ClientConfig.SaveMessags), new MultiplayerLobby(_client, 123, "awesome tournament 5") };
 		
 		foreach (var channel in channels)
 		{
 			Assert.That(channel.MessageHistory, Is.Null);
-			await client.JoinChannelAsync(channel.ChannelName);
+			await _client.JoinChannelAsync(channel.ChannelName);
 			Assert.DoesNotThrowAsync(async () =>
 			{
-				await client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
+				await _client.SendPrivateMessageAsync(channel.ChannelName, "Hello world");
 			});
 		}
 
-		foreach (var channel in client.Channels.ToList())
+		foreach (var channel in _client.Channels.ToList())
 		{
 			Assert.That(channel.MessageHistory, Is.Null);
 		}
@@ -119,11 +115,10 @@ public class ClientTests
 	[Test]
 	public async Task TestOnMessageSent()
 	{
-		var client = new BanchoClient();
 		bool sent = false;
 		
-		client.OnPrivateMessageSent += _ => sent = true;
-		await client.SendPrivateMessageAsync("Dummy", "Hello world");
+		_client.OnPrivateMessageSent += _ => sent = true;
+		await _client.SendPrivateMessageAsync("Dummy", "Hello world");
 		
 		Assert.That(sent, Is.True);
 	}

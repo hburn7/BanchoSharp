@@ -30,6 +30,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	///  The current host of the lobby
 	/// </summary>
 	public IMultiplayerPlayer? Host { get; }
+	public BeatmapShell? CurrentBeatmap { get; }
 	public bool HostIsChangingMap { get; }
 	public bool MatchInProgress { get; }
 	public bool IsLocked { get; }
