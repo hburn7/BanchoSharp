@@ -95,13 +95,12 @@ public class MultiplayerTests
 		"Players: 1",
 		"Slot 1  Not Ready https://osu.ppy.sh/u/8191845 Stage           [Host / Easy, Hidden, Relax, Flashlight, SpunOut]")]
 	public void TestMpSettingsUpdates(string lobbyName, string historyUrl, int matchId, Mods lobbyMods,
-		int beatmapId,
-		string beatmapTitle, string beatmapArtist, string beatmapDifficulty, LobbyFormat format,
-		WinCondition winCondition,
-		TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady, int p1Id,
-		string p1Name, int p1Slot, Mods p1Mods,
-		params string[] updates)
+		int beatmapId, string beatmapTitle, string beatmapArtist, string beatmapDifficulty, LobbyFormat format,
+		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady, int p1Id,
+		string p1Name, int p1Slot, Mods p1Mods, params string[] updates)
     {
+	    _lobby = new MultiplayerLobby(_client, matchId, lobbyName);
+
         foreach (string u in updates)
 		{
 			// Generates the !mp settings response for these parameters and calls it
@@ -121,8 +120,8 @@ public class MultiplayerTests
             Assert.That(_lobby.CurrentBeatmap.Difficulty, Is.EqualTo(beatmapDifficulty));
             Assert.That(_lobby.Format, Is.EqualTo(format));
             Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
-            Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
             Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
+            Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
             Assert.That(_lobby.Players[0].IsReady, Is.EqualTo(p1IsReady));
             Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
             Assert.That(_lobby.Players[0].Name, Is.EqualTo(p1Name));

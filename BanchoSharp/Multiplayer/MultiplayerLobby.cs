@@ -101,7 +101,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			InvokeOnStateChanged();
 		};
 
-		OnBeatmapChanged += shell => CurrentBeatmap = shell;
+		OnBeatmapChanged += shell =>
+		{
+			CurrentBeatmap = shell;
+			HostIsChangingMap = false;
+		};
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -708,21 +712,13 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdateBeatmapFromMpSettings(string banchoResponse)
 	{
 		// throw new NotImplementedException();
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[0].Split()[1].Split('/').Last());
+		string artist = splits[0].Split().Last();
+		string title = splits[1].Split('[').First().Trim();
+		string difficulty = splits[1].Split('[')[1].Split(']')[0];
 		
-		// Beatmap: https://osu.ppy.sh/b/676065 FLOOR LEGENDS -KAC 2012- - KAC 2012 ULTIMATE MEDLEY -HISTORIA SOUND VOLTEX- [NOVICE]
-		int lastArtistSeparatorIdx = banchoResponse.LastIndexOf(" - ", StringComparison.Ordinal);
-		int titleStartIdx = lastArtistSeparatorIdx + 2;
-		int titleEndIdx = banchoResponse.LastIndexOf(" [", StringComparison.Ordinal);
-		int diffStartIdx = titleEndIdx + 1;
-		int diffEndIdx = banchoResponse.LastIndexOf(']');
-		int lastSlashIdx = banchoResponse.LastIndexOf('/');
-
-		string artistSub = banchoResponse[..lastArtistSeparatorIdx];
-		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
-		string titleSub = banchoResponse[titleStartIdx..titleEndIdx];
-		string diffSub = banchoResponse[diffStartIdx..diffEndIdx];
-
-		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), artistSub, titleSub, diffSub, GameMode));
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
 		InvokeOnStateChanged();
 	}
 
@@ -735,28 +731,28 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Changed beatmap to https://osu.ppy.sh/b/35165 dBu Music - Border of Life
 		// Only happens via !mp set
 		
-		// throw new NotImplementedException();
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[0].Split('/').Last());
+		string artist = splits[1];
+		string title = splits[0].Split(id.ToString())[1].Split(" - ")[0].Trim();
+		
+		// There seems to not be difficulty information from !mp set
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, "<<unknown>>", GameMode));
 	}
 
 	private void UpdateBeatmapChanged(string banchoResponse)
 	{
 		// Beatmap changed to: Camellia - Feelin Sky (Camellia\'s "200step" Self-remix) [Ambivalence] (https://osu.ppy.sh/b/1314987)
 		// Beatmap changed to: Blue Stahli - Anti You [[[REMAP]]] (https://osu.ppy.sh/b/146540)
-		HostIsChangingMap = false;
 
-		int lastArtistSeparatorIdx = banchoResponse.LastIndexOf(" - ", StringComparison.Ordinal);
-		int titleStartIdx = lastArtistSeparatorIdx + 2;
-		int titleEndIdx = banchoResponse.LastIndexOf(" [", StringComparison.Ordinal);
-		int diffStartIdx = titleEndIdx + 1;
-		int diffEndIdx = banchoResponse.LastIndexOf(']');
-		int lastSlashIdx = banchoResponse.LastIndexOf('/');
-
-		string artistSub = banchoResponse[..lastArtistSeparatorIdx];
-		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
-		string titleSub = banchoResponse[titleStartIdx..titleEndIdx];
-		string diffSub = banchoResponse[diffStartIdx..diffEndIdx];
-
-		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), artistSub, titleSub, diffSub, GameMode));
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[1].Split(" (https://osu.ppy.sh/b/")[1].Split(')')[0]);
+		string artist = splits[0].Split(':')[1].Trim();
+		string title = splits[1].Split('[')[0].Trim();
+		
+		int lastBracketIndex = splits[1].Split('[')[1].LastIndexOf(']');
+		string difficulty = splits[1].Split('[')[1][..lastBracketIndex];
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
 		InvokeOnStateChanged();
 	}
 
