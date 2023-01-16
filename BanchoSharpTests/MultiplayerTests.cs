@@ -161,9 +161,9 @@ public class MultiplayerTests
 				InvokeBancho(msg, _lobby.ChannelName);
 				Assert.That(_lobby.HostIsChangingMap, Is.False);
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
-				// This is expected as there is no beatmap ID
+				// This is expected as there is no beatmap ID, title, etc.
 			}
 		}
 	}
