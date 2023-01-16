@@ -64,6 +64,9 @@ public class MultiplayerTests
 
 	private void Invoke(IIrcMessage message) => _client.SimulateMessageReceivedAsync(message);
 
+	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceivedAsync(
+		PrivateIrcMessage.CreateFromParameters("BanchoBot", recipient, banchoBotMessage));
+	
 	[SetUp]
 	public void Setup()
 	{
@@ -140,6 +143,29 @@ public class MultiplayerTests
 		var beatmap = new BeatmapShell(id, artist, title, diff, mode);
 
 		_lobby.OnBeatmapChanged += shell => { Assert.That(shell, Is.EqualTo(beatmap)); };
+	}
+
+	[Test]
+	public void TestHostChangingBeatmap()
+	{
+		string[] messages = { "Changed beatmap to", "Beatmap changed to:" };
+
+		Assert.That(_lobby.HostIsChangingMap, Is.False);
+		foreach (string msg in messages)
+		{
+			InvokeBancho("Host is changing map...", _lobby.ChannelName);
+			Assert.That(_lobby.HostIsChangingMap, Is.True);
+
+			try
+			{
+				InvokeBancho(msg, _lobby.ChannelName);
+				Assert.That(_lobby.HostIsChangingMap, Is.False);
+			}
+			catch (Exception e)
+			{
+				// This is expected as there is no beatmap ID
+			}
+		}
 	}
 
 	[TestCase("a")]
