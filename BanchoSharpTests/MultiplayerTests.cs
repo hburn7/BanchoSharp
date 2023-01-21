@@ -309,4 +309,23 @@ public class MultiplayerTests
 		await _lobby.KickAsync(_lobby.Players.First());
 		Assert.That(_lobby.Players.Count == 0);
 	}
+
+	[Test]
+	public void TestPlayerFinishedResults()
+	{
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 1));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 2));
+
+		InvokeBancho("Player 1 finished playing (Score: 7428260, PASSED).", _lobby.ChannelName);
+		InvokeBancho("Player 2 finished playing (Score: 196409, FAILED).", _lobby.ChannelName);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(_lobby.FindPlayer("Player 1")?.Score, Is.EqualTo(7428260));
+			Assert.That(_lobby.FindPlayer("Player 2")?.Score, Is.EqualTo(196409));
+
+			Assert.That(_lobby.FindPlayer("Player 1")?.Passed, Is.True);
+			Assert.That(_lobby.FindPlayer("Player 2")?.Passed, Is.False);
+		});
+	}
 }
