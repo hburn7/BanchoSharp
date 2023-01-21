@@ -8,25 +8,24 @@ public class SlashCommandHandler : ISlashCommandHandler
 	private readonly string[] _splits;
 
 	/// <summary>
-	/// A <see cref="ISlashCommandHandler"/> is responsible for parsing
-	/// a user-provided slash command.
-	/// 
-	/// <example>
-	/// <code>
+	///  A <see cref="ISlashCommandHandler" /> is responsible for parsing
+	///  a user-provided slash command.
+	///  <example>
+	///   <code>
 	/// string prompt = "/join #osu with invalid args"
 	/// var handler = new SlashCommandHandler(prompt);
 	/// // handler.Command = "join"
 	/// // handler.RelevantParameters = { "#osu" }
 	/// // handler.Parameters = { "#osu", "with", "invalid", "args" }
 	/// </code>
-	/// </example>
+	///  </example>
 	/// </summary>
 	/// <param name="prompt">The input to process</param>
 	public SlashCommandHandler(string prompt)
 	{
 		_prompt = prompt;
 		_splits = _prompt.Split();
-		
+
 		Command = _prompt.Split('/')[1].Split()[0];
 		IsBanchoCommand = Command.ToUpper() is "JOIN" or "PART" or "ME" or "IGNORE" or "UNIGNORE" or "AWAY" or "QUERY";
 
@@ -41,7 +40,7 @@ public class SlashCommandHandler : ISlashCommandHandler
 			Parameters = null;
 		}
 	}
-	
+
 	public string? Command { get; }
 	public string[]? Parameters { get; }
 	public bool IsBanchoCommand { get; }
@@ -63,7 +62,8 @@ public class SlashCommandHandler : ISlashCommandHandler
 	};
 
 	private string[]? GetFirstArgOrDefault() => _splits.Length >= 2 ? new string[] { _splits[1] } : null;
+
 	// Combine into one string, return as a 1-parameter array containing the string.
-	private string[]? GetAllAsStringOrDefault() => _splits.Length >= 2 ? new string[] {string.Join(" ", _splits[1..])} : null;
+	private string[]? GetAllAsStringOrDefault() => _splits.Length >= 2 ? new string[] { string.Join(" ", _splits[1..]) } : null;
 	private string[]? GetSpaceDelimitedArgsOrDefault() => _splits.Any() ? _splits[1..] : null;
 }

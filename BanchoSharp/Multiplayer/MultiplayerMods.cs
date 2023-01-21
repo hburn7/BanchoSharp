@@ -27,10 +27,10 @@ public enum Mods
 
 public static class ModsExtensions
 {
-    /// <summary>
-    ///  Returns a string with a shorter format, example: "HDDT"
-    /// </summary>
-    public static string ToAbbreviatedForm(this Mods mods, bool showFreemod = true)
+	/// <summary>
+	///  Returns a string with a shorter format, example: "HDDT"
+	/// </summary>
+	public static string ToAbbreviatedForm(this Mods mods, bool showFreemod = true)
 	{
 		var ret = new StringBuilder(16);
 
@@ -138,14 +138,14 @@ public static class ModsUtilities
 		{ "Freemod", Mods.Freemod }
 	};
 
-    /// <summary>
-    ///  Mods may be added to the end of a player report when doing !mp settings,
-    ///  or may be included in the `Active mods: xyz` portion of the !mp settings response.
-    ///  This method will convert mods into a "mods string". The intention is for
-    /// </summary>
-    /// <param name="mods"></param>
-    /// <returns></returns>
-    public static Mods GetModsFromString(params string[] mods)
+	/// <summary>
+	///  Mods may be added to the end of a player report when doing !mp settings,
+	///  or may be included in the `Active mods: xyz` portion of the !mp settings response.
+	///  This method will convert mods into a "mods string". The intention is for
+	/// </summary>
+	/// <param name="mods"></param>
+	/// <returns></returns>
+	public static Mods GetModsFromString(params string[] mods)
 	{
 		Mods ret = 0;
 		foreach (string mod in mods)

@@ -1,31 +1,3 @@
-#region License
-// Copyright (c) 2015, Matt Holmes
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of the project nor the
-//       names of its contributors may be used to endorse or promote products
-//       derived from this software without specific prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT  LIMITED TO, THE IMPLIED WARRANTIES 
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL 
-// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT 
-// OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-// TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
-// EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-// Disclaimer: Updated to C# 10 syntax by StageCodes
-#endregion
-
 using BanchoSharp.Interfaces;
 
 namespace BanchoSharp.Messaging.ChatMessages;
@@ -38,7 +10,7 @@ namespace BanchoSharp.Messaging.ChatMessages;
 public class IrcMessage : IIrcMessage
 {
 	/// <summary>
-	/// Wrapper for a raw IRC string sent from an IRC server.
+	///  Wrapper for a raw IRC string sent from an IRC server.
 	/// </summary>
 	/// <param name="rawMessage">The raw message as sent from the IRC server</param>
 	public IrcMessage(string rawMessage)
@@ -46,7 +18,7 @@ public class IrcMessage : IIrcMessage
 		RawMessage = rawMessage;
 		Timestamp = DateTime.Now;
 
-		if (TryParse(rawMessage, out IrcMessage message))
+		if (TryParse(rawMessage, out var message))
 		{
 			Command = message.Command;
 			Prefix = message.Prefix;
@@ -68,6 +40,7 @@ public class IrcMessage : IIrcMessage
 		Tags = new Dictionary<string, string>();
 		Timestamp = DateTime.Now;
 	}
+
 	// Unused -- Will leave here in case they're needed.
 	// private bool IsPrefixHostmask => !String.IsNullOrWhiteSpace(Prefix) && Prefix.Contains('@') && Prefix.Contains('!');
 	// private bool IsPrefixServer => !String.IsNullOrWhiteSpace(Prefix) && !IsPrefixHostmask && Prefix.Contains('.');
@@ -89,6 +62,7 @@ public class IrcMessage : IIrcMessage
 		{
 			RawMessage = line
 		};
+
 		int nextspace;
 		int position = 0;
 
@@ -233,7 +207,7 @@ public class IrcMessage : IIrcMessage
 				parts.AddRange(
 					processedParams.Take(processedParams.Count - (lastHasSpaces ? 1 : 0))
 					               .SelectMany(p => !p.Contains(' ')
-                                       ? new[] { p }
+						               ? new[] { p }
 						               : p.Split(' ').Where(s => !String.IsNullOrWhiteSpace(s)))
 				);
 

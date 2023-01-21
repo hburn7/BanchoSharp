@@ -1,5 +1,4 @@
 using BanchoSharp.Interfaces;
-using BanchoSharp.Multiplayer;
 
 namespace BanchoSharp.EventArgs;
 

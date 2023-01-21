@@ -6,12 +6,12 @@ namespace BanchoSharp.Interfaces;
 public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 {
 	/// <summary>
-	/// The ID of the multiplayer lobby. This is the value at the end of the "mp link" (https://osu.ppy.sh/mp/ID)
+	///  The ID of the multiplayer lobby. This is the value at the end of the "mp link" (https://osu.ppy.sh/mp/ID)
 	/// </summary>
 	public long Id { get; }
 	/// <summary>
-	/// The name of the multiplayer lobby. e.g. "OWC 2021: (team A) vs. (team B)
-	/// Not to be confused with FullName./>
+	///  The name of the multiplayer lobby. e.g. "OWC 2021: (team A) vs. (team B)
+	///  Not to be confused with FullName./>
 	/// </summary>
 	public string Name { get; }
 	/// <summary>
@@ -23,7 +23,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	/// </summary>
 	public int Size { get; }
 	/// <summary>
-	/// The number of players present in the lobby currently
+	///  The number of players present in the lobby currently
 	/// </summary>
 	public int PlayerCount { get; }
 	/// <summary>

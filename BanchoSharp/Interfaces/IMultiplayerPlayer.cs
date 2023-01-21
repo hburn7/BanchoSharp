@@ -13,11 +13,13 @@ public interface IMultiplayerPlayer
 	public bool? Passed { get; set; }
 	public bool IsReady { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
+
 	/// <summary>
-	///  This is used for targeting a <see cref="IMultiplayerPlayer"/> in the chat room
+	///  This is used for targeting a <see cref="IMultiplayerPlayer" /> in the chat room
 	/// </summary>
 	/// <returns>#ID or NAME of player</returns>
 	public string TargetableName();
+
 	public bool Equals(object? other);
 	public bool Equals(MultiplayerPlayer other);
 	public int GetHashCode();

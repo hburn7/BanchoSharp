@@ -145,6 +145,20 @@ public class BanchoClient : IBanchoClient
 
 	public void SimulateMessageReceivedAsync(IIrcMessage message) => OnMessageReceived?.Invoke(message);
 
+	public IChatChannel? GetChannel(string fullName)
+	{
+		fullName = fullName.Replace(' ', '_');
+		return Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+	}
+
+	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+
+	public void Dispose()
+	{
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
+
 	private void RemoveChannel(string channelName)
 	{
 		var ch = GetChannel(channelName);
@@ -163,20 +177,13 @@ public class BanchoClient : IBanchoClient
 			Logger.Debug($"Attempt was made to add channel that is already present (ignoring). [{channelName}]");
 			return GetChannel(channelName)!;
 		}
-		
+
 		var ch = new Channel(channelName, ClientConfig.SaveMessags);
 		Channels.Add(ch);
 		Logger.Debug($"Channel added in memory: {ch}");
 		return ch;
 	}
 
-	public IChatChannel? GetChannel(string fullName)
-	{
-		fullName = fullName.Replace(' ', '_');
-		return Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
-	}
-	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
-	
 	private void RegisterInvokers()
 	{
 		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
@@ -192,7 +199,7 @@ public class BanchoClient : IBanchoClient
 			Logger.Debug($"Added tournament lobby channel to memory: {mp}");
 			OnChannelJoined?.Invoke(mp);
 		};
-		
+
 		OnConnected += () => Logger.Info("Client connected");
 		OnDisconnected += () =>
 		{
@@ -200,6 +207,7 @@ public class BanchoClient : IBanchoClient
 			Dispose();
 			Logger.Info("Client disposed.");
 		};
+
 		OnAuthenticated += () => Logger.Info("Authenticated with osu!Bancho successfully");
 		OnAuthenticationFailed += () => Logger.Warn("Failed to authenticate with osu!Bancho (invalid credentials)");
 		OnDeploy += s =>
@@ -220,6 +228,7 @@ public class BanchoClient : IBanchoClient
 			RemoveChannel(c);
 			Logger.Debug($"Removed channel {c} from memory");
 		};
+
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Queried {u}");
 
@@ -250,18 +259,18 @@ public class BanchoClient : IBanchoClient
 				}
 			}
 
-			if (m.Command == "332")  // RPL_TOPIC code. Received whenever a channel is joined.
+			if (m.Command == "332") // RPL_TOPIC code. Received whenever a channel is joined.
 			{
 				string channelNameMessage = m.RawMessage.Split(" :")[0];
 				string channelName = channelNameMessage[channelNameMessage.IndexOf("#", StringComparison.OrdinalIgnoreCase)..];
-				
+
 				if (ContainsChannel(channelName))
 				{
 					return;
 				}
-				
+
 				var channel = new Channel(channelName, ClientConfig.SaveMessags);
-				
+
 				if (channelName.StartsWith("#mp_"))
 				{
 					// Don't add a multiplayer lobby here. We do this elsewhere.
@@ -269,7 +278,7 @@ public class BanchoClient : IBanchoClient
 					// insted of a sophistocated IMultiplayerLobby
 					return;
 				}
-				
+
 				Channels.Add(channel);
 				OnChannelJoined?.Invoke(channel);
 			}
@@ -283,7 +292,7 @@ public class BanchoClient : IBanchoClient
 					// Bancho gives the error even though this type of communication is fine.
 					return;
 				}
-				
+
 				OnChannelJoinFailure?.Invoke(failedChannel);
 			}
 			else if (m.Command == "PING")
@@ -295,10 +304,7 @@ public class BanchoClient : IBanchoClient
 			}
 		};
 
-		OnChannelJoinFailure += name =>
-		{
-			Logger.Info($"Failed to connect to channel {name}");
-		};
+		OnChannelJoinFailure += name => { Logger.Info($"Failed to connect to channel {name}"); };
 
 		OnAuthenticated += () => IsAuthenticated = true;
 		OnDisconnected += () => IsAuthenticated = false;
@@ -380,6 +386,23 @@ public class BanchoClient : IBanchoClient
 		}
 	}
 
+	protected void Dispose(bool disposing)
+	{
+		// In the event we inherit from this class, if necessary, this would be overridden
+		// and further resources should be disposed.
+		if (disposing)
+		{
+			_reader?.Dispose();
+			_tcp?.Dispose();
+			_writer?.Dispose();
+
+			if (IsConnected)
+			{
+				DisconnectAsync().GetAwaiter().GetResult();
+			}
+		}
+	}
+
 	/// <summary>
 	///  Initializes a new <see cref="BanchoClient" /> which allows for connecting
 	///  to osu!Bancho's IRC server.
@@ -417,26 +440,4 @@ public class BanchoClient : IBanchoClient
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
-	protected void Dispose(bool disposing)
-	{
-		// In the event we inherit from this class, if necessary, this would be overridden
-		// and further resources should be disposed.
-		if (disposing)
-		{
-			_reader?.Dispose();
-			_tcp?.Dispose();
-			_writer?.Dispose();
-
-			if (IsConnected)
-			{
-				DisconnectAsync().GetAwaiter().GetResult();
-			}
-		}
-	}
-
-	public void Dispose()
-	{
-		Dispose(true);
-		GC.SuppressFinalize(this);
-	}
 }

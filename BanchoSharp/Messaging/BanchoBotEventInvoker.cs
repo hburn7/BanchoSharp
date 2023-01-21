@@ -6,11 +6,7 @@ namespace BanchoSharp.Messaging;
 public class BanchoBotEventInvoker : IBanchoBotEventInvoker, IBanchoBotEvents
 {
 	private readonly IBanchoClient _client;
-
-	public BanchoBotEventInvoker(IBanchoClient client)
-	{
-		_client = client;
-	}
+	public BanchoBotEventInvoker(IBanchoClient client) { _client = client; }
 
 	public void ProcessMessage(IPrivateIrcMessage msg)
 	{
@@ -31,12 +27,12 @@ public class BanchoBotEventInvoker : IBanchoBotEventInvoker, IBanchoBotEvents
 				Logger.Error($"Failed to parse lobby id {id}");
 				return;
 			}
-			
+
 			var mp = new MultiplayerLobby(_client, long.Parse(lobbyId), name);
 			OnTournamentLobbyCreated?.Invoke(mp);
 		}
 	}
 
-	private bool IsMultiplayerLobbyCreation(string content) => content.StartsWith("Created the tournament match");
 	public event Action<IMultiplayerLobby>? OnTournamentLobbyCreated;
+	private bool IsMultiplayerLobbyCreation(string content) => content.StartsWith("Created the tournament match");
 }

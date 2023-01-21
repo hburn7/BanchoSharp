@@ -1,5 +1,3 @@
 namespace BanchoSharp.Exceptions;
 
-public class IrcClientNotConnectedException : IrcException
-{
-}
+public class IrcClientNotConnectedException : IrcException {}

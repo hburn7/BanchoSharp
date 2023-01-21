@@ -14,9 +14,9 @@
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <PackageVersion>1.2.0</PackageVersion>
     </PropertyGroup>
-    
+
     <ItemGroup>
-        <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt"/>
     </ItemGroup>
 
 </Project>
