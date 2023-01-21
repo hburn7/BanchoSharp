@@ -1,6 +1,7 @@
 using BanchoSharp.EventArgs;
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
+using BanchoSharp.Messaging.ChatMessages;
 
 namespace BanchoSharp.Multiplayer;
 
@@ -30,20 +31,27 @@ public enum GameMode
 
 public class BeatmapShell
 {
-	public BeatmapShell(int id, GameMode? gameMode)
+	public BeatmapShell(int id, string artist, string title, string difficulty,
+		GameMode? gameMode)
 	{
 		Id = id;
+		Artist = artist;
+		Title = title;
+		Difficulty = difficulty;
 		GameMode = gameMode;
 	}
 
 	public int Id { get; }
+	public string Title { get; }
+	public string Artist { get; }
+	public string Difficulty { get; }
 	public GameMode? GameMode { get; }
 }
 
 /// <summary>
 ///  Note: This class is untested and is not officially supported yet.
 /// </summary>
-public class MultiplayerLobby : Channel, IMultiplayerLobby
+public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 {
 	private readonly IBanchoClient _client;
 	private DateTime? _lobbyTimerEnd;
@@ -69,16 +77,39 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			ResetLobbyTimer();
 			ResetMatchTimer();
+			InvokeOnStateChanged();
 		};
 
 		OnMatchFinished += () =>
 		{
 			ResetLobbyTimer();
 			ResetMatchTimer();
+			InvokeOnStateChanged();
 		};
 
-		OnPlayerJoined += player => Players.Add(player);
-		OnPlayerDisconnected += disconnectedEventArgs => Players.Remove(disconnectedEventArgs.Player);
+		OnPlayerJoined += player =>
+		{
+			Players.Add(player);
+			InvokeOnStateChanged();
+		};
+
+		OnPlayerDisconnected += disconnectedEventArgs =>
+		{
+			Players.Remove(disconnectedEventArgs.Player);
+			InvokeOnStateChanged();
+		};
+
+		OnPlayerKicked += kickedEventArgs =>
+		{
+			Players.Remove(kickedEventArgs.Player);
+			InvokeOnStateChanged();
+		};
+
+		OnBeatmapChanged += shell =>
+		{
+			CurrentBeatmap = shell;
+			HostIsChangingMap = false;
+		};
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -90,18 +121,21 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
 	public event Action? OnClosed;
-	public event Action<MultiplayerPlayer>? OnHostChanged;
+	public event Action<IMultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
-	public event Action<MultiplayerPlayer>? OnPlayerJoined;
+	public event Action<IMultiplayerPlayer>? OnPlayerJoined;
 	public event Action<PlayerChangedTeamEventArgs>? OnPlayerChangedTeam;
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
+	public event Action<PlayerKickedEventArgs>? OnPlayerKicked;
 	public event Action? OnHostChangingMap;
 	public long Id { get; }
 	public string Name { get; private set; }
 	public string HistoryUrl => $"https://osu.ppy.sh/mp/{Id}";
 	public int Size { get; private set; } = 1;
-	public MultiplayerPlayer? Host { get; private set; }
+	public int PlayerCount => Players.Count;
+	public IMultiplayerPlayer? Host { get; private set; }
+	public BeatmapShell? CurrentBeatmap { get; private set; }
 	public bool HostIsChangingMap { get; private set; }
 	public bool MatchInProgress { get; private set; }
 	public bool IsLocked { get; private set; }
@@ -113,7 +147,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	public LobbyFormat Format { get; private set; } = LobbyFormat.HeadToHead;
 	public WinCondition WinCondition { get; private set; } = WinCondition.Score;
 	public GameMode GameMode { get; private set; } = GameMode.osu;
-	public List<MultiplayerPlayer> Players { get; } = new();
+	public List<IMultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
 	public Mods Mods { get; private set; } = Mods.None;
 
@@ -128,12 +162,15 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		GameMode = gameMode.Value;
 
 		await SendAsync($"!mp set {(int)format} {(int)winCondition} {(int)gameMode}");
+		InvokeOnStateChanged();
 	}
 
 	public async Task AbortAsync()
 	{
 		await SendAsync("!mp abort");
 		MatchInProgress = false;
+
+		InvokeOnStateChanged();
 	}
 
 	public async Task AbortTimerAsync()
@@ -142,22 +179,26 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		ResetLobbyTimer();
 		ResetMatchTimer();
 		OnLobbyTimerFinished?.Invoke();
+		InvokeOnStateChanged();
 	}
 
-	public async Task DisplaySettingsAsync() => await SendAsync("!mp settings");
+	IMultiplayerPlayer? IMultiplayerLobby.FindPlayer(string username) => FindPlayer(username);
+	public async Task RefreshSettingsAsync() => await SendAsync("!mp settings");
 
 	public async Task SetSizeAsync(int newSize)
 	{
 		await SendAsync($"!mp size {newSize}");
 		Size = newSize;
+		InvokeOnStateChanged();
 	}
 
-	public async Task MoveAsync(string player, int slot) => await SendAsync($"!mp move {player} {slot}");
+	public async Task MoveAsync(IMultiplayerPlayer player, int slot) => await SendAsync($"!mp move {player} {slot}");
 
 	public async Task RenameAsync(string newName)
 	{
 		await SendAsync($"!mp name {newName}");
 		Name = newName;
+		InvokeOnStateChanged();
 	}
 
 	public async Task InviteAsync(string username) => await SendAsync($"!mp invite {username}");
@@ -166,12 +207,14 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		await SendAsync("!mp lock");
 		IsLocked = true;
+		InvokeOnStateChanged();
 	}
 
 	public async Task UnlockAsync()
 	{
 		await SendAsync("!mp unlock");
 		IsLocked = false;
+		InvokeOnStateChanged();
 	}
 
 	public async Task CloseAsync()
@@ -180,22 +223,25 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		IsClosed = true;
 		_client.Channels.Remove(this);
 		OnClosed?.Invoke();
+		InvokeOnStateChanged();
 	}
 
 	public async Task ClearHostAsync()
 	{
 		await SendAsync("!mp clearhost");
 		Host = null;
+		InvokeOnStateChanged();
 	}
 
-	public async Task SetHostAsync(string username)
+	public async Task SetHostAsync(IMultiplayerPlayer player)
 	{
-		await SendAsync($"!mp host {username}");
-		Host = FindPlayer(username);
-
-		OnHostChanged?.Invoke(Host!);
+		await SendAsync($"!mp host {player.TargetableName()}");
+		Host = player;
+		OnHostChanged?.Invoke(player);
+		InvokeOnStateChanged();
 	}
 
+	// todo: probably needs an associated event
 	public async Task SetModsAsync(params string[] mods) => await SendAsync($"!mp mods {string.Join(" ", mods)}");
 	public async Task SetModsAsync(string mods) => await SendAsync($"!mp mods {mods}");
 
@@ -204,6 +250,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		await SendAsync($"!mp timer {seconds}");
 		_lobbyTimerEnd = DateTime.Now.AddSeconds(seconds);
 		OnLobbyTimerStarted?.Invoke(seconds);
+		InvokeOnStateChanged();
 	}
 
 	public async Task SetMatchStartTimerAsync(int seconds)
@@ -211,22 +258,34 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		await SendAsync($"!mp start {seconds}");
 		_matchTimerEnd = DateTime.Now.AddSeconds(seconds);
 		OnMatchStartTimerStarted?.Invoke(seconds);
+		InvokeOnStateChanged();
 	}
 
 	public async Task StartAsync() => await SendAsync("!mp start");
-	public async Task KickAsync(string username) => await SendAsync($"!mp kick {username}");
-	public async Task BanAsync(string username) => await SendAsync($"!mp ban {username}");
+
+	public async Task KickAsync(IMultiplayerPlayer player)
+	{
+		await SendAsync($"!mp kick {player.TargetableName()}");
+		player.Lobby = null;
+
+		OnPlayerKicked?.Invoke(new PlayerKickedEventArgs(player, DateTime.Now));
+		InvokeOnStateChanged();
+	}
+
+	public async Task BanAsync(IMultiplayerPlayer player) => await SendAsync($"!mp ban {player.TargetableName()}");
 
 	public async Task AddRefereeAsync(params string[] usernames)
 	{
 		await SendAsync($"!mp addref {string.Join(" ", usernames)}");
 		Referees.AddRange(usernames);
+		InvokeOnStateChanged();
 	}
 
 	public async Task RemoveRefereesAsync(params string[] usernames)
 	{
 		await SendAsync($"!mp removeref {string.Join(" ", usernames)}");
 		Referees.RemoveAll(usernames.Contains);
+		InvokeOnStateChanged();
 	}
 
 	public async Task SetMapAsync(BeatmapShell beatmap)
@@ -245,7 +304,13 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
-	public event Action? OnAllPlayersReady;
+	public event Action OnAllPlayersReady;
+	public event Action? OnStateChanged;
+	public void InvokeOnStateChanged() => OnStateChanged?.Invoke();
+
+	// todo: track player slots here
+	public async Task MoveAsync(string player, int slot) => await SendAsync($"!mp move {player} {slot}");
+	public async Task SetModsAsync(Mods mods) => await SendAsync($"!mp mods {mods}");
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
@@ -266,7 +331,15 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsBeatmapChangedNotification(banchoResponse))
 		{
-			UpdateHostChangedBeatmap(banchoResponse);
+			UpdateBeatmapChanged(banchoResponse);
+		}
+		else if (IsBeatmapSettingsNotification(banchoResponse))
+		{
+			UpdateBeatmapFromMpSettings(banchoResponse);
+		}
+		else if (IsBeatmapMpSetNotification(banchoResponse))
+		{
+			UpdateBeatmapFromMpSet(banchoResponse);
 		}
 		else if (IsPlayerJoinedInSlotNotification(banchoResponse))
 		{
@@ -323,18 +396,32 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 			OnMatchAborted?.Invoke();
 			MatchInProgress = false;
 		}
+		else if (IsMatchSizeNotification(banchoResponse))
+		{
+			if (!int.TryParse(banchoResponse.Split().Last(), out int size))
+			{
+				Logger.Warn($"Could not parse size from bancho bot match size notification: '{banchoResponse}'");
+				return;
+			}
+
+			Size = size;
+		}
+
+		InvokeOnStateChanged();
 	}
 
-	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name: ");
-	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode: ");
+	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name:");
+	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode:");
 	private bool IsHostChangingMapNotification(string banchoResponse) => banchoResponse.Equals("Host is changing map...");
-	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to: ");
+	private bool IsBeatmapSettingsNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap:");
+	private bool IsBeatmapMpSetNotification(string banchoResponse) => banchoResponse.StartsWith("Changed beatmap to");
+	private bool IsBeatmapChangedNotification(string banchoResponse) => banchoResponse.StartsWith("Beatmap changed to:");
 	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.EndsWith(" became the host.");
 	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
 	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("The match has started!");
 	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
 	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
-	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players: ");
+	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players:");
 
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
@@ -342,9 +429,12 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
+
+	// todo: check if needed --> private bool IsPlayerKickedNotification(string banchoResponse) => banchoResponse.Contains("");
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
-	
+	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
+
 	private void UpdateName(string banchoResponse)
 	{
 		// Process room name
@@ -352,12 +442,14 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Index of where the multiplayer lobby name begins
 		int index = banchoResponse.LastIndexOf(',');
 		string nameSub = banchoResponse[..index];
-		string name = nameSub.Split(':')[1].Trim();
+		string name = nameSub.Split("Room name:")[1].Trim();
 
 		Name = name;
+		InvokeOnStateChanged();
 	}
 
-	private MultiplayerPlayer? FindPlayer(string name) => Players.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	private IMultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	private IMultiplayerPlayer? FindPlayer(IMultiplayerPlayer player) => Players.FirstOrDefault(x => x.Equals(player));
 
 	private WinCondition ParseWinCondition(string wc) => wc switch
 	{
@@ -386,7 +478,17 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		_ => throw new InvalidOperationException($"Cannot parse game mode {gm}")
 	};
 
-	private async Task SendAsync(string command) => await _client.SendAsync($"PRIVMSG {ChannelName} {command}");
+	private async Task SendAsync(string command)
+	{
+		if (_client.ClientConfig.SaveMessags)
+		{
+			_client.GetChannel(ChannelName)
+			       ?.MessageHistory?.AddLast(
+				       PrivateIrcMessage.CreateFromParameters(_client.ClientConfig.Credentials.Username, ChannelName, command));
+		}
+
+		await _client.SendAsync($"PRIVMSG {ChannelName} {command}");
+	}
 
 #region MultiplayerLobby update methods
 	private void UpdateMatchHost(string banchoResponse)
@@ -403,6 +505,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnHostChanged?.Invoke(Host);
 			}
 		}
+
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerInformation(string banchoResponse)
@@ -420,18 +524,18 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		string? playerInfo = banchoResponse.Length > (playerNameBegin + 16) ? banchoResponse[(playerNameBegin + 16)..] : null;
 
 		int? playerId = null;
-		
+
 		// Attempt to find the digits from "/u/" to where the name begins, which is the player id.
 		if (int.TryParse(banchoResponse[banchoResponse.IndexOf("/u/", StringComparison.Ordinal)..(playerNameBegin - 1)].Where(char.IsDigit).ToArray(), out int parsedPlayerId))
 		{
 			playerId = parsedPlayerId;
 		}
-		
+
 		var player = FindPlayer(playerName);
 
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(playerName, slot)
+			player = new MultiplayerPlayer(this, playerName, slot)
 			{
 				Id = playerId
 			};
@@ -448,7 +552,10 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slot));
 			}
 		}
-		
+
+		bool isReady = !banchoResponse[..playerNameBegin].Contains("Not Ready");
+
+		player.IsReady = isReady;
 		player.Id = playerId;
 
 		if (playerInfo != null)
@@ -537,6 +644,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			OnSettingsUpdated?.Invoke();
 		}
+
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayersRemaining(string banchoResponse)
@@ -554,6 +663,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			_playersRemainingCount = playerCount;
 		}
+
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerSlotMove(string banchoResponse)
@@ -567,14 +678,15 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (player is null)
 		{
-			player = new MultiplayerPlayer(name, slotNum);
+			player = new MultiplayerPlayer(this, name, slotNum);
 			Players.Add(player);
 		}
-		
+
 		int previousSlot = player!.Slot;
 		player.Slot = slotNum;
 
 		OnPlayerSlotMove?.Invoke(new PlayerSlotMoveEventArgs(player, previousSlot, slotNum));
+		InvokeOnStateChanged();
 	}
 
 	// Handles joining in a slot *and* joining in a team slot.
@@ -582,29 +694,73 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		string[] splits = banchoResponse.Split(" joined in slot ");
 		string playerName = splits[0];
-		
+
 		if (banchoResponse.Contains("for team"))
 		{
 			int slotNum = int.Parse(splits[1][..2].Trim()); // Ignore trailing period
 			string team = banchoResponse.Split(" for team ")[1][..^1];
 			var color = team == "blue" ? TeamColor.Blue : TeamColor.Red;
-			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum, color));
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(this, playerName, slotNum, color));
 		}
 		else
 		{
 			int slotNum = int.Parse(splits[1][..^1]); // Ignore trailing period
-			OnPlayerJoined?.Invoke(new MultiplayerPlayer(playerName, slotNum));
+			OnPlayerJoined?.Invoke(new MultiplayerPlayer(this, playerName, slotNum));
 		}
+
+		InvokeOnStateChanged();
 	}
 
-	private void UpdateHostChangedBeatmap(string banchoResponse)
+	/// <summary>
+	///  Called when !mp settings displays the current beatmap.
+	/// </summary>
+	/// <param name="banchoResponse"></param>
+	private void UpdateBeatmapFromMpSettings(string banchoResponse)
 	{
-		HostIsChangingMap = false;
+		// throw new NotImplementedException();
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[0].Split()[1].Split('/').Last());
+		string artist = splits[0].Split().Last();
+		string title = splits[1].Split('[').First().Trim();
+		string difficulty = splits[1].Split('[')[1].Split(']')[0];
 
-		int lastSlashIdx = banchoResponse.LastIndexOf('/');
-		string idSub = banchoResponse[(lastSlashIdx + 1)..^1];
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
+		InvokeOnStateChanged();
+	}
 
-		OnBeatmapChanged?.Invoke(new BeatmapShell(int.Parse(idSub), GameMode));
+	/// <summary>
+	///  Called when !mp set is used to change the beatmap.
+	/// </summary>
+	/// <param name="banchoResponse"></param>
+	private void UpdateBeatmapFromMpSet(string banchoResponse)
+	{
+		// Changed beatmap to https://osu.ppy.sh/b/35165 dBu Music - Border of Life
+		// Changed beatmap to https://osu.ppy.sh/b/28493 Hitomi Sato, Junichi Masuda - Battle! Gym Leader
+		// Only happens via !mp set
+
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[0].Split("https://osu.ppy.sh/b/")[1].Split()[0]);
+		string artist = splits[1];
+		string title = splits[0].Split(id.ToString())[1].Split(" - ")[0].Trim();
+
+		// There seems to not be difficulty information from !mp set
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, "<<unknown>>", GameMode));
+	}
+
+	private void UpdateBeatmapChanged(string banchoResponse)
+	{
+		// Beatmap changed to: Camellia - Feelin Sky (Camellia\'s "200step" Self-remix) [Ambivalence] (https://osu.ppy.sh/b/1314987)
+		// Beatmap changed to: Blue Stahli - Anti You [[[REMAP]]] (https://osu.ppy.sh/b/146540)
+
+		string[] splits = banchoResponse.Split(" - ");
+		int id = int.Parse(splits[1].Split(" (https://osu.ppy.sh/b/")[1].Split(')')[0]);
+		string artist = splits[0].Split(':')[1].Trim();
+		string title = splits[1].Split('[')[0].Trim();
+
+		int lastBracketIndex = splits[1].Split('[')[1].LastIndexOf(']');
+		string difficulty = splits[1].Split('[')[1][..lastBracketIndex];
+		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
+		InvokeOnStateChanged();
 	}
 
 	private void UpdateFormatWincondition(string banchoResponse)
@@ -622,6 +778,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		WinCondition = ParseWinCondition(winCondition);
 		Format = ParseFormat(format);
+		InvokeOnStateChanged();
 	}
 
 	private void UpdateMatchMods(string banchoResponse)
@@ -683,6 +840,8 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
 		}
+
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerResults(string banchoResponse)
@@ -705,6 +864,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		player.Score = score;
 		player.Passed = resultStr.Contains("PASSED");
+		InvokeOnStateChanged();
 	}
 
 	private void UpdatePlayerDisconnect(string banchoResponse)
@@ -719,6 +879,7 @@ public class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 
 		OnPlayerDisconnected?.Invoke(new PlayerDisconnectedEventArgs(player, DateTime.Now));
+		InvokeOnStateChanged();
 	}
 #endregion
 }

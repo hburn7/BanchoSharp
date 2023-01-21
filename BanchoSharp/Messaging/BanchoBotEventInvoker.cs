@@ -7,7 +7,10 @@ public class BanchoBotEventInvoker : IBanchoBotEventInvoker, IBanchoBotEvents
 {
 	private readonly IBanchoClient _client;
 
-	public BanchoBotEventInvoker(IBanchoClient client) { _client = client; }
+	public BanchoBotEventInvoker(IBanchoClient client)
+	{
+		_client = client;
+	}
 
 	public void ProcessMessage(IPrivateIrcMessage msg)
 	{

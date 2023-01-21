@@ -85,10 +85,23 @@ public class BanchoClient : IBanchoClient
 
 	public async Task JoinChannelAsync(string name)
 	{
-		await Execute($"JOIN {name}");
+		if (ContainsChannel(name))
+		{
+			return;
+		}
 
-		var channel = AddChannel(name);
-		OnChannelJoined?.Invoke(channel);
+		name = name.Replace(' ', '_');
+		if (name.StartsWith("#"))
+		{
+			await Execute($"JOIN {name}");
+
+			var channel = AddChannel(name);
+			OnChannelJoined?.Invoke(channel);
+		}
+		else
+		{
+			await QueryUserAsync(name);
+		}
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -130,6 +143,8 @@ public class BanchoClient : IBanchoClient
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
 	}
 
+	public void SimulateMessageReceivedAsync(IIrcMessage message) => OnMessageReceived?.Invoke(message);
+
 	private void RemoveChannel(string channelName)
 	{
 		var ch = GetChannel(channelName);
@@ -143,13 +158,23 @@ public class BanchoClient : IBanchoClient
 
 	private IChatChannel AddChannel(string channelName)
 	{
+		if (ContainsChannel(channelName))
+		{
+			Logger.Debug($"Attempt was made to add channel that is already present (ignoring). [{channelName}]");
+			return GetChannel(channelName)!;
+		}
+		
 		var ch = new Channel(channelName, ClientConfig.SaveMessags);
 		Channels.Add(ch);
 		Logger.Debug($"Channel added in memory: {ch}");
 		return ch;
 	}
-	public IChatChannel? GetChannel(string fullName) => Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 
+	public IChatChannel? GetChannel(string fullName)
+	{
+		fullName = fullName.Replace(' ', '_');
+		return Channels.FirstOrDefault(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+	}
 	public bool ContainsChannel(string fullName) => Channels.Any(x => x.ChannelName.Equals(fullName, StringComparison.OrdinalIgnoreCase));
 	
 	private void RegisterInvokers()
@@ -160,6 +185,14 @@ public class BanchoClient : IBanchoClient
 
 	private void RegisterEvents()
 	{
+		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
+		{
+			Logger.Info($"Joined tournament lobby: {mp}");
+			Channels.Add(mp);
+			Logger.Debug($"Added tournament lobby channel to memory: {mp}");
+			OnChannelJoined?.Invoke(mp);
+		};
+		
 		OnConnected += () => Logger.Info("Client connected");
 		OnDisconnected += () =>
 		{
@@ -181,7 +214,12 @@ public class BanchoClient : IBanchoClient
 		};
 
 		OnChannelJoined += c => Logger.Info($"Joined channel {c}");
-		OnChannelJoinFailure += c => Logger.Info($"Failed to join channel {c}");
+		OnChannelJoinFailure += c =>
+		{
+			Logger.Info($"Failed to join channel {c}");
+			RemoveChannel(c);
+			Logger.Debug($"Removed channel {c} from memory");
+		};
 		OnChannelParted += c => Logger.Info($"Parted {c}");
 		OnUserQueried += u => Logger.Info($"Queried {u}");
 
@@ -224,12 +262,28 @@ public class BanchoClient : IBanchoClient
 				
 				var channel = new Channel(channelName, ClientConfig.SaveMessags);
 				
+				if (channelName.StartsWith("#mp_"))
+				{
+					// Don't add a multiplayer lobby here. We do this elsewhere.
+					// If this check isn't here, it will add a "dumb" IChatChannel
+					// insted of a sophistocated IMultiplayerLobby
+					return;
+				}
+				
 				Channels.Add(channel);
 				OnChannelJoined?.Invoke(channel);
 			}
 			else if (m.Command == "403")
 			{
 				string failedChannel = m.RawMessage.Split("No such channel")[1].Trim();
+
+				if (!failedChannel.StartsWith("#"))
+				{
+					// Users that are offline and being DM'd need to not be removed.
+					// Bancho gives the error even though this type of communication is fine.
+					return;
+				}
+				
 				OnChannelJoinFailure?.Invoke(failedChannel);
 			}
 			else if (m.Command == "PING")
@@ -363,7 +417,7 @@ public class BanchoClient : IBanchoClient
 		RegisterEvents();
 	}
 #pragma warning restore CS8618
-	protected virtual void Dispose(bool disposing)
+	protected void Dispose(bool disposing)
 	{
 		// In the event we inherit from this class, if necessary, this would be overridden
 		// and further resources should be disposed.
