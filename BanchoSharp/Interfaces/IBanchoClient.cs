@@ -5,9 +5,9 @@ namespace BanchoSharp.Interfaces;
 ///  of events. Subscribe to any event to execute a function whenever they occur. There cannot be
 ///  more than 4 simultaneous connections to osu!Bancho at any point, even on different clients.
 /// </summary>
-public interface IBanchoClient
+public interface IBanchoClient : IDisposable
 {
-	public BanchoClientConfig ClientConfig { get; }
+	public BanchoClientConfig ClientConfig { get; set; }
 	/// <summary>
 	/// Interface responsible for the processing of all events related to BanchoBot. Subscribe to this
 	/// interface's events for anything related to BanchoBot.
@@ -80,6 +80,12 @@ public interface IBanchoClient
 	///  Fired whenever the server sends a ping to this client. PONG responses are handled by the library.
 	/// </summary>
 	public event Action OnPingReceived;
+	/// <summary>
+	/// Checks for whether the channel name exists in the list of channels
+	/// </summary>
+	/// <param name="channelName">Name of the channel to check</param>
+	/// <returns>True if found, false otherwise</returns>
+	public bool ContainsChannel(string channelName);
 
 	/// <summary>
 	///  Initiates a connection to Bancho
@@ -138,6 +144,12 @@ public interface IBanchoClient
 	/// <returns></returns>
 	public Task MakeTournamentLobbyAsync(string name, bool isPrivate = false);
 
+	/// <summary>
+	/// Used for testing purposes only. Invokes the OnMessageReceived event with the given message.
+	/// </summary>
+	/// <param name="message">The message that will be received by the client</param>
+	/// <returns></returns>
+	public void SimulateMessageReceivedAsync(IIrcMessage message);
+
 	public IChatChannel? GetChannel(string fullName);
-	//todo: add commands like make, makeprivate, etc.
 }

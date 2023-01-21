@@ -40,7 +40,7 @@ public class BanchoClientConfig : IBanchoClientConfig
 		IgnoredCommands = ignoredCommands;
 	}
 
-	public IIrcCredentials Credentials { get; }
+	public IIrcCredentials Credentials { get; set; }
 	public bool SaveMessags { get; }
 	public string Host { get; }
 	public int Port { get; }

@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharp", "BanchoSharp\BanchoSharp.csproj", "{E0586A91-E265-4ACD-9E07-98DDE5CCE8CB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharpTest", "BanchoSharpTest\BanchoSharpTest.csproj", "{B8A18928-05F4-4502-82A8-8953F83DF32C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharpExample", "BanchoSharpExample\BanchoSharpExample.csproj", "{B8A18928-05F4-4502-82A8-8953F83DF32C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BanchoSharpTests", "BanchoSharpTests\BanchoSharpTests.csproj", "{7CDEB7A7-A87B-4729-B249-B99DDFDFD726}"
 EndProject

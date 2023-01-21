@@ -15,7 +15,7 @@ public interface IPrivateIrcMessage : IIrcMessage
 	/// </summary>
 	public string Content { get; }
 	/// <summary>
-	/// Whether the message is direct and private between users
+	/// Whether the message is being sent directly to the logged in user.
 	/// </summary>
 	public bool IsDirect { get; }
 	/// <summary>

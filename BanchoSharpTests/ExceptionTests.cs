@@ -3,46 +3,49 @@ namespace BanchoSharpTests;
 public class ExceptionTests
 {
 	[SetUp]
-	public void Setup() {}
+	public async Task Setup() {}
 
 	[Test]
-	public void TestNotConnectedException()
+	public async Task TestNotConnectedException()
 	{
 		BanchoClient client = new();
 		Assert.Multiple(() =>
 		{
 			Assert.That(!client.IsConnected);
-			Assert.DoesNotThrow(() =>
+			Assert.DoesNotThrowAsync(async () =>
 			{
-				client.SendAsync("test").GetAwaiter().GetResult();
+				await client.SendAsync("test");
 			});
 		});
 	}
 
 	[Test]
-	public void TestNotAuthenticatedExceptionOnSend()
+	public async Task TestNotAuthenticatedExceptionOnSend()
 	{
 		BanchoClient client = new();
 
 		try
 		{
-			client.ConnectAsync().GetAwaiter().GetResult();
+			await client.ConnectAsync();
 		}
-		catch {}
+		catch
+		{
+			// ignored
+		}
 		finally
 		{
 			Assert.That(client.IsConnected);
-			Assert.Throws<IrcClientNotAuthenticatedException>(() => { client.SendAsync("Test").GetAwaiter().GetResult(); });
+			Assert.ThrowsAsync<IrcClientNotAuthenticatedException>(async () => { await client.SendAsync("Test"); });
 		}
 	}
 
 	[Test]
-	public void TestExceptionBypassOnSend()
+	public async Task TestExceptionBypassOnSend()
 	{
 		BanchoClient client = new();
 		try
 		{
-			client.ConnectAsync().GetAwaiter().GetResult();
+			await client.ConnectAsync();
 		}
 		catch
 		{
