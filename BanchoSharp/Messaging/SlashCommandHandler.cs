@@ -27,12 +27,6 @@ public class SlashCommandHandler : ISlashCommandHandler
 		_prompt = prompt;
 		_splits = _prompt.Split();
 		
-		if (!IsSlashCommand())
-		{
-			Logger.Warn($"Message {prompt} is not a slash command.");
-			return;
-		}
-
 		Command = _prompt.Split('/')[1].Split()[0];
 		IsBanchoCommand = Command.ToUpper() is "JOIN" or "PART" or "ME" or "IGNORE" or "UNIGNORE" or "AWAY" or "QUERY";
 
