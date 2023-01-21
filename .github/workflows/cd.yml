@@ -17,6 +17,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
   deploy-to-nuget-if-updated:
+    needs: release
     name: "Deploy binaries"
     runs-on: "ubuntu-latest"
     steps:
