@@ -187,12 +187,31 @@ public class MultiplayerTests
 		InvokeEventInvoker(joinStr);
 	}
 
-	[TestCase("dummy", 4)]
-	[TestCase("dummy", 3)]
-	[TestCase("dummy2", 5)]
-	[TestCase("dummy", 6)]
-	[TestCase("dummy2", 2)]
-	public void TestPlayerChangedSlot(string player, int slot) {}
+	[Test]
+	public void TestPlayerChangedSlot()
+	{
+		string player1 = "dummy1";
+		string player2 = "dummy2";
+		string player3 = "dummy3";
+		
+		_lobby.OnPlayerSlotMove += e =>
+		{
+			var playerMatch = _lobby.FindPlayer(e.Player.Name);
+			Assert.Multiple(() =>
+			{
+				Assert.That(playerMatch, Is.Not.Null);
+				Assert.That(playerMatch!.Slot, Is.EqualTo(e.NewSlot));
+			});
+		};
+		
+		InvokeEventInvoker(_playerJoined(player1, 1, null));
+		InvokeEventInvoker(_playerJoined(player2, 2, null));
+		InvokeEventInvoker(_playerJoined(player3, 3, null));
+		
+		InvokeEventInvoker(_slotChanged(player1, 5));
+		InvokeEventInvoker(_slotChanged(player2, 16));
+		InvokeEventInvoker(_slotChanged(player3, 2));
+	}
 
 	[Test]
 	public void TestCreation()
