@@ -734,10 +734,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdateBeatmapFromMpSet(string banchoResponse)
 	{
 		// Changed beatmap to https://osu.ppy.sh/b/35165 dBu Music - Border of Life
+		// Changed beatmap to https://osu.ppy.sh/b/28493 Hitomi Sato, Junichi Masuda - Battle! Gym Leader
 		// Only happens via !mp set
 
 		string[] splits = banchoResponse.Split(" - ");
-		int id = int.Parse(splits[0].Split('/').Last());
+		int id = int.Parse(splits[0].Split("https://osu.ppy.sh/b/")[1].Split()[0]);
 		string artist = splits[1];
 		string title = splits[0].Split(id.ToString())[1].Split(" - ")[0].Trim();
 
