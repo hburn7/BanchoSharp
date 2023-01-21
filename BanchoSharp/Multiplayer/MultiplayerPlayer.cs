@@ -32,7 +32,7 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 	public bool? Passed { get; set; }
 	public bool IsReady { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
-	public string TargetableName() => Id.HasValue ? $"#{Id}" : Name;
+	public string TargetableName() => Id.HasValue ? $"#{Id}" : Name.Replace(' ', '_');
 
 	public override bool Equals(object? other) => other?.GetType() == typeof(MultiplayerPlayer) &&
 	                                              Name.Equals((other as MultiplayerPlayer)!.Name);

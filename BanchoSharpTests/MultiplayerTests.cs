@@ -249,9 +249,9 @@ public class MultiplayerTests
 	[Test]
 	public void TestTargetableName()
 	{
-		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Foo", 1, TeamColor.Red));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Foo bar", 1, TeamColor.Red));
 
-		Assert.That(_lobby.Players.First().TargetableName().Equals("Foo"));
+		Assert.That(_lobby.Players.First().TargetableName().Equals("Foo_bar"));
 
 		_lobby.Players.First().Id = 123;
 		Assert.That(_lobby.Players.First().TargetableName().Equals("#123"));
