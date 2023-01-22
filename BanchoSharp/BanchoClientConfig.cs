@@ -23,10 +23,10 @@ public class IrcCredentials : IIrcCredentials
 public class BanchoClientConfig : IBanchoClientConfig
 {
 	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
-		bool saveMessages = true, string host = "irc.ppy.sh", int port = 6667)
+		bool saveMessags = true, string host = "irc.ppy.sh", int port = 6667)
 	{
 		Credentials = credentials;
-		SaveMessages = saveMessages;
+		SaveMessags = saveMessags;
 		Host = host;
 		Port = port;
 
@@ -41,7 +41,7 @@ public class BanchoClientConfig : IBanchoClientConfig
 	}
 
 	public IIrcCredentials Credentials { get; set; }
-	public bool SaveMessages { get; }
+	public bool SaveMessags { get; }
 	public string Host { get; }
 	public int Port { get; }
 	public string[]? IgnoredCommands { get; set; } =
