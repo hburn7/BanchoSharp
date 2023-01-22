@@ -31,7 +31,7 @@ public enum GameMode
 
 public class BeatmapShell
 {
-	public BeatmapShell(int id, string artist, string title, string difficulty,
+	public BeatmapShell(int id, string? artist, string? title, string? difficulty,
 		GameMode? gameMode)
 	{
 		Id = id;
@@ -42,10 +42,24 @@ public class BeatmapShell
 	}
 
 	public int Id { get; }
-	public string Title { get; }
-	public string Artist { get; }
-	public string Difficulty { get; }
+	public string? Title { get; }
+	public string? Artist { get; }
+	public string? Difficulty { get; }
 	public GameMode? GameMode { get; }
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is not BeatmapShell other)
+		{
+			return false;
+		}
+		
+		return other.Id == Id && other.Title == Title && other.Artist == Artist && other.Difficulty == Difficulty && other.GameMode == GameMode;
+	}
+
+	protected bool Equals(BeatmapShell other) => Id == other.Id && Title == other.Title && Artist == other.Artist && Difficulty == other.Difficulty && GameMode == other.GameMode;
+
+	public override int GetHashCode() => HashCode.Combine(Id, Title, Artist, Difficulty, GameMode);
 }
 
 /// <summary>
@@ -717,12 +731,23 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	/// <param name="banchoResponse"></param>
 	private void UpdateBeatmapFromMpSettings(string banchoResponse)
 	{
-		// throw new NotImplementedException();
+		int id = -1;
+		string difficulty, artist, title;
+		difficulty = artist = title = null;
+
 		string[] splits = banchoResponse.Split(" - ");
-		int id = int.Parse(splits[0].Split()[1].Split('/').Last());
-		string artist = splits[0].Split().Last();
-		string title = splits[1].Split('[').First().Trim();
-		string difficulty = splits[1].Split('[')[1].Split(']')[0];
+		
+		try
+		{
+			id = int.Parse(splits[0].Split()[1].Split('/').Last());
+			artist = splits[0].Split().Last();
+			title = splits[1].Split('[').First().Trim();
+			difficulty = splits[1].Split('[')[1].Split(']')[0];
+		}
+		catch (IndexOutOfRangeException)
+		{
+			//
+		}
 
 		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
 		InvokeOnStateChanged();

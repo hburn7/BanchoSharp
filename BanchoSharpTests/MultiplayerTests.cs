@@ -67,6 +67,8 @@ public class MultiplayerTests
 	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceivedAsync(
 		PrivateIrcMessage.CreateFromParameters("BanchoBot", recipient, banchoBotMessage));
 	
+	private void InvokeToLobby(string message) => Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", _lobby.ChannelName, message));
+	
 	[SetUp]
 	public void Setup()
 	{
@@ -146,6 +148,25 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestMpSettingsBeatmap()
+	{
+		string input = "Beatmap: https://osu.ppy.sh/b/2572163 Kurokotei - Galaxy Collapse";
+		string input2 = "Beatmap: https://osu.ppy.sh/b/2907160 Silentroom - NULCTRL";
+		
+		var shell = new BeatmapShell(2572163, "Kurokotei", "Galaxy Collapse", null, _lobby.GameMode);
+		var shell2 = new BeatmapShell(2907160, "Silentroom", "NULCTRL", null, _lobby.GameMode);
+		
+		Assert.Multiple(() =>
+		{
+			InvokeToLobby(input);
+			Assert.That(_lobby.CurrentBeatmap, Is.EqualTo(shell));
+		
+			InvokeToLobby(input2);
+			Assert.That(_lobby.CurrentBeatmap, Is.EqualTo(shell2));
+		});
+	}
+
+	[Test]
 	public void TestHostChangingBeatmap()
 	{
 		string[] messages = { "Changed beatmap to", "Beatmap changed to:" };
@@ -153,12 +174,12 @@ public class MultiplayerTests
 		Assert.That(_lobby.HostIsChangingMap, Is.False);
 		foreach (string msg in messages)
 		{
-			InvokeBancho("Host is changing map...", _lobby.ChannelName);
+			InvokeToLobby("Host is changing map...");
 			Assert.That(_lobby.HostIsChangingMap, Is.True);
 
 			try
 			{
-				InvokeBancho(msg, _lobby.ChannelName);
+				InvokeToLobby(msg);
 				Assert.That(_lobby.HostIsChangingMap, Is.False);
 			}
 			catch (Exception)
@@ -316,8 +337,8 @@ public class MultiplayerTests
 		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 1));
 		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 2));
 
-		InvokeBancho("Player 1 finished playing (Score: 7428260, PASSED).", _lobby.ChannelName);
-		InvokeBancho("Player 2 finished playing (Score: 196409, FAILED).", _lobby.ChannelName);
+		InvokeToLobby("Player 1 finished playing (Score: 7428260, PASSED).");
+		InvokeToLobby("Player 2 finished playing (Score: 196409, FAILED).");
 
 		Assert.Multiple(() =>
 		{
