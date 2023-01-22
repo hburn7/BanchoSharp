@@ -93,8 +93,8 @@ public class ClientTests
 	{
 		_client.ClientConfig = new BanchoClientConfig(new IrcCredentials(), LogLevel.Debug, false);
 
-		IChatChannel[] channels = { new Channel("TheOmyNomy", _client.ClientConfig.SaveMessags), 
-			new Channel("#osu", _client.ClientConfig.SaveMessags), new MultiplayerLobby(_client, 123, "awesome tournament 5") };
+		IChatChannel[] channels = { new Channel("TheOmyNomy", _client.ClientConfig.SaveMessages), 
+			new Channel("#osu", _client.ClientConfig.SaveMessages), new MultiplayerLobby(_client, 123, "awesome tournament 5") };
 		
 		foreach (var channel in channels)
 		{

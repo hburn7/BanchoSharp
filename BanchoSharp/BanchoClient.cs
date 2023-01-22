@@ -177,7 +177,7 @@ public class BanchoClient : IBanchoClient
 			return GetChannel(channelName)!;
 		}
 
-		var ch = new Channel(channelName, ClientConfig.SaveMessags);
+		var ch = new Channel(channelName, ClientConfig.SaveMessages);
 		Channels.Add(ch);
 		Logger.Debug($"Channel added in memory: {ch}");
 		return ch;
@@ -241,6 +241,21 @@ public class BanchoClient : IBanchoClient
 				LinkedList<IIrcMessage>? messageHistory;
 				if (priv.IsDirect)
 				{
+					// Add channel of user if we don't have it
+					if (!ContainsChannel(priv.Sender))
+					{
+						var ch = new Channel(priv.Sender, ClientConfig.SaveMessages);
+						if (ClientConfig.SaveMessages)
+						{
+							ch.MessageHistory!.AddLast(priv);
+						}
+
+						Channels.Add(ch);
+						OnChannelJoined?.Invoke(ch);
+				
+						Logger.Debug($"Added channel from incoming DM: {priv.Sender}");
+					}
+					
 					messageHistory = GetChannel(priv.Sender)?.MessageHistory;
 				}
 				else
@@ -268,7 +283,7 @@ public class BanchoClient : IBanchoClient
 					return;
 				}
 
-				var channel = new Channel(channelName, ClientConfig.SaveMessags);
+				var channel = new Channel(channelName, ClientConfig.SaveMessages);
 
 				if (channelName.StartsWith("#mp_"))
 				{
@@ -377,7 +392,7 @@ public class BanchoClient : IBanchoClient
 			{
 				OnPrivateMessageReceived?.Invoke(dm);
 
-				if (dm.Recipient == ClientConfig.Credentials.Username)
+				if (dm.IsDirect)
 				{
 					OnAuthenticatedUserDMReceived?.Invoke(dm);
 				}

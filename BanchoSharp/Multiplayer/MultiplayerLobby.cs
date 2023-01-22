@@ -72,7 +72,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private DateTime? _matchTimerEnd;
 	private int _playersRemainingCount;
 
-	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}", client.ClientConfig.SaveMessags)
+	public MultiplayerLobby(IBanchoClient client, long id, string name) : base($"#mp_{id}", client.ClientConfig.SaveMessages)
 	{
 		_client = client;
 
@@ -494,7 +494,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 	private async Task SendAsync(string command)
 	{
-		if (_client.ClientConfig.SaveMessags)
+		if (_client.ClientConfig.SaveMessages)
 		{
 			_client.GetChannel(ChannelName)
 			       ?.MessageHistory?.AddLast(
