@@ -16,7 +16,6 @@ public class BanchoClient : IBanchoClient
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
-	// public event Action<IMultiplayerLobby> OnMultiplayerLobbyCreated;
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
 	public IBanchoBotEvents BanchoBotEvents { get; private set; }
