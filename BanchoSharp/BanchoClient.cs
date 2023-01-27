@@ -2,6 +2,8 @@
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
+using Humanizer;
+using Humanizer.Localisation;
 using System.Net.Sockets;
 
 namespace BanchoSharp;
@@ -16,6 +18,12 @@ public class BanchoClient : IBanchoClient
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
+
+	private int _messagesSentLastPeriod;
+	private readonly int _messagesThreshold;
+	private readonly int _rateLimitIntervalSeconds;
+	private DateTime _resetAt = DateTime.MinValue;
+	
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
 	public IBanchoBotEvents BanchoBotEvents { get; private set; }
@@ -191,6 +199,18 @@ public class BanchoClient : IBanchoClient
 
 	private void RegisterEvents()
 	{
+		// Rate limiter
+		OnDeploy += _ =>
+		{
+			if (_resetAt < DateTime.Now)
+			{
+				_resetAt = DateTime.Now.AddSeconds(_rateLimitIntervalSeconds);
+				_messagesSentLastPeriod = 0;
+			}
+
+			_messagesSentLastPeriod++;
+		};
+		
 		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
 		{
 			Logger.Info($"Joined tournament lobby: {mp}");
@@ -331,6 +351,14 @@ public class BanchoClient : IBanchoClient
 			throw new IrcClientNotAuthenticatedException();
 		}
 
+		if (_messagesSentLastPeriod == (_messagesThreshold - 1))
+		{
+			// User is rate limited and needs to wait.
+			string timeRemaining = (_resetAt - DateTime.Now).Humanize(precision: 2, maxUnit: TimeUnit.Minute, minUnit: TimeUnit.Second);
+			Logger.Warn($"You are being rate limited. Please wait {timeRemaining} before sending another message. Message discarded.");
+			return;
+		}
+		
 		await _writer!.WriteLineAsync(message);
 		OnDeploy?.Invoke(message);
 	}
@@ -413,6 +441,10 @@ public class BanchoClient : IBanchoClient
 #pragma warning disable CS8618
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
+		_messagesSentLastPeriod = 0;
+		_messagesThreshold = clientConfig.IsBot ? 300 : 10;
+		_rateLimitIntervalSeconds = clientConfig.IsBot ? 60 : 5;
+		
 		ClientConfig = clientConfig;
 
 		if (ClientConfig.IgnoredCommands != null)
@@ -434,6 +466,10 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient()
 	{
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+		
+		_messagesSentLastPeriod = 0;
+		_messagesThreshold = ClientConfig.IsBot ? 300 : 10;
+		_rateLimitIntervalSeconds = ClientConfig.IsBot ? 60 : 5;
 
 		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
 		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;
