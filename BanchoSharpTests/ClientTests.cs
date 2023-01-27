@@ -1,5 +1,6 @@
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
+using BanchoSharp.Messaging.ChatMessages;
 using BanchoSharp.Multiplayer;
 
 namespace BanchoSharpTests;
@@ -33,6 +34,40 @@ public class ClientTests
 				Assert.That(_client.Channels.All(x => !x.ChannelName.Contains(' ')));
 			});
 		}
+	}
+
+	[Test]
+	public void TestUserDmReceivedAsync()
+	{
+		var msg = new PrivateIrcMessage(":Timper!cho@ppy.sh PRIVMSG Stage :Test 2 :D");
+
+		bool authInvoke = false;
+
+		_client.OnAuthenticatedUserDMReceived += _ => authInvoke = true;
+		_client.SimulateMessageReceived(msg);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(authInvoke, Is.True);
+			
+			Assert.That(_client.GetChannel("Timper"), Is.Not.Null);
+			Assert.That(_client.GetChannel("Timper")!.MessageHistory!, Has.Count.EqualTo(1));
+			
+			Assert.That(_client.Channels, Has.Count.EqualTo(1));
+		});
+	}
+
+	[Test]
+	public void TestCreatePrivateIrcMessage()
+	{
+		var msg = new PrivateIrcMessage(":Timper!cho@ppy.sh PRIVMSG Stage :Test 2 :D");
+		Assert.Multiple(() =>
+		{
+			Assert.That(msg.Content, Is.EqualTo("Test 2 :D"));
+			Assert.That(msg.Sender, Is.EqualTo("Timper"));
+			Assert.That(msg.Recipient, Is.EqualTo("Stage"));
+			Assert.That(msg.IsDirect);
+		});
 	}
 
 	[Test]
