@@ -142,7 +142,7 @@ public class BanchoClient : IBanchoClient
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
 	}
 
-	public void SimulateMessageReceivedAsync(IIrcMessage message) => OnMessageReceived?.Invoke(message);
+	public void SimulateMessageReceived(IIrcMessage message) => OnMessageReceived?.Invoke(message);
 
 	public IChatChannel? GetChannel(string fullName)
 	{
@@ -238,23 +238,25 @@ public class BanchoClient : IBanchoClient
 			if (m is IPrivateIrcMessage priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
-				LinkedList<IIrcMessage>? messageHistory;
+
+				var channel = GetChannel(priv.IsDirect ? priv.Sender : priv.Recipient);
 				if (priv.IsDirect)
 				{
-					messageHistory = GetChannel(priv.Sender)?.MessageHistory;
+					channel ??= AddChannel(priv.Sender);
+					OnAuthenticatedUserDMReceived?.Invoke(priv);
 				}
 				else
 				{
-					messageHistory = GetChannel(priv.Recipient)?.MessageHistory;
+					channel ??= AddChannel(priv.Recipient);
 				}
-
-				if (messageHistory == null)
+				
+				if (channel.MessageHistory == null)
 				{
 					Logger.Warn($"Failed to append to MessageHistory for {priv}");
 				}
 				else
 				{
-					messageHistory.AddLast(priv);
+					channel.MessageHistory.AddLast(priv);
 				}
 			}
 
