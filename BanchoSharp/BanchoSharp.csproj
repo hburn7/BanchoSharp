@@ -16,7 +16,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt"/>
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Humanizer" Version="2.14.1" />
     </ItemGroup>
 
 </Project>
