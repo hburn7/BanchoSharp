@@ -150,7 +150,7 @@ public interface IBanchoClient : IDisposable
 	/// </summary>
 	/// <param name="message">The message that will be received by the client</param>
 	/// <returns></returns>
-	public void SimulateMessageReceivedAsync(IIrcMessage message);
+	public void SimulateMessageReceived(IIrcMessage message);
 
 	public IChatChannel? GetChannel(string fullName);
 }
