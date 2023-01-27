@@ -23,19 +23,21 @@ public class IrcCredentials : IIrcCredentials
 public class BanchoClientConfig : IBanchoClientConfig
 {
 	public BanchoClientConfig(IIrcCredentials credentials, LogLevel logLevel = LogLevel.Info,
-		bool saveMessags = true, string host = "irc.ppy.sh", int port = 6667)
+		bool saveMessags = true, string host = "irc.ppy.sh", int port = 6667, bool isBot = false)
 	{
 		Credentials = credentials;
 		SaveMessags = saveMessags;
 		Host = host;
 		Port = port;
+		IsBot = isBot;
 
 		Logger.LogLevel = logLevel;
 	}
 
 	public BanchoClientConfig(IIrcCredentials credentials, string[]? ignoredCommands,
-		bool saveMessages = true, LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667)
-		: this(credentials, logLevel, saveMessages, host, port)
+		bool saveMessages = true, LogLevel logLevel = LogLevel.Info, string host = "irc.ppy.sh", int port = 6667,
+		bool isBot = false)
+		: this(credentials, logLevel, saveMessages, host, port, isBot)
 	{
 		IgnoredCommands = ignoredCommands;
 	}
@@ -44,6 +46,7 @@ public class BanchoClientConfig : IBanchoClientConfig
 	public bool SaveMessags { get; }
 	public string Host { get; }
 	public int Port { get; }
+	public bool IsBot { get; }
 	public string[]? IgnoredCommands { get; set; } =
 	{
 		"QUIT", "PART", "JOIN", "MODE", "366", "353", "333"
