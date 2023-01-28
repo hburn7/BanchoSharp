@@ -763,13 +763,33 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Changed beatmap to https://osu.ppy.sh/b/28493 Hitomi Sato, Junichi Masuda - Battle! Gym Leader
 		// Only happens via !mp set
 
+		string artist = "";
+		string title = "";
+		
 		string[] splits = banchoResponse.Split(" - ");
-		int id = int.Parse(splits[0].Split("https://osu.ppy.sh/b/")[1].Split()[0]);
-		string artist = splits[1];
-		string title = splits[0].Split(id.ToString())[1].Split(" - ")[0].Trim();
+		if (!int.TryParse(splits[0].Split("https://osu.ppy.sh/b/")[1].Split()[0], out int id))
+		{
+			Logger.Warn("Could not determine beatmap ID from bancho response: " + banchoResponse);
+		}
 
-		// There seems to not be difficulty information from !mp set
-		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, "<<unknown>>", GameMode));
+		try
+		{
+			artist = splits[1];
+			title = splits[0].Split(id.ToString())[1].Split(" - ")[0].Trim();
+		}
+		catch (Exception e)
+		{
+			Logger.Warn($"Failed to parse beatmap info from bancho response: {banchoResponse}. Exception: {e.Message}");
+			if (e.StackTrace != null)
+			{
+				Logger.Debug(e.StackTrace);
+			}
+		}
+		finally
+		{
+			// There seems to not be difficulty information from !mp set
+			OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, "<<unknown>>", GameMode));
+		}
 	}
 
 	private void UpdateBeatmapChanged(string banchoResponse)
@@ -778,14 +798,40 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Beatmap changed to: Blue Stahli - Anti You [[[REMAP]]] (https://osu.ppy.sh/b/146540)
 
 		string[] splits = banchoResponse.Split(" - ");
-		int id = int.Parse(splits[1].Split(" (https://osu.ppy.sh/b/")[1].Split(')')[0]);
-		string artist = splits[0].Split(':')[1].Trim();
-		string title = splits[1].Split('[')[0].Trim();
 
-		int lastBracketIndex = splits[1].Split('[')[1].LastIndexOf(']');
-		string difficulty = splits[1].Split('[')[1][..lastBracketIndex];
-		OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
-		InvokeOnStateChanged();
+		if (!int.TryParse(splits[1].Split(" (https://osu.ppy.sh/b/")[1].Split(')')[0], out int id))
+		{
+			Logger.Warn("Could not determine beatmap ID from bancho response: " + banchoResponse);
+		}
+		
+		string artist = "<unknown>";
+		string title = "<unknown>";
+		string difficulty = "<unknown>";
+
+		try
+		{
+			if (banchoResponse.Contains('[') && banchoResponse.Contains(']'))
+			{
+				artist = splits[0].Split(':')[1].Trim();
+				title = splits[1].Split('[')[0].Trim();
+
+				int lastBracketIndex = splits[1].Split('[')[1].LastIndexOf(']');
+				difficulty = splits[1].Split('[')[1][..lastBracketIndex];
+			}
+		}
+		catch (Exception e)
+		{
+			Logger.Warn($"Failed to parse beatmap info from bancho response: {banchoResponse}. Exception: {e.Message}");
+			if (e.StackTrace != null)
+			{
+				Logger.Debug(e.StackTrace);
+			}
+		}
+		finally
+		{
+			OnBeatmapChanged?.Invoke(new BeatmapShell(id, artist, title, difficulty, GameMode));
+			InvokeOnStateChanged();
+		}
 	}
 
 	private void UpdateFormatWincondition(string banchoResponse)
@@ -832,7 +878,6 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		else
 		{
 			// Otherwise it came after running "!mp settings"
-
 			modList = banchoResponse.Split("Active mods: ")[1].Trim();
 		}
 
@@ -864,6 +909,12 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
+		}
+		
+		// Update mods for all players in the lobby
+		foreach (var player in Players)
+		{
+			player.Mods = Mods;
 		}
 
 		InvokeOnStateChanged();
