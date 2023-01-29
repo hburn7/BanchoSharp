@@ -2,6 +2,8 @@
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
+using Humanizer;
+using Humanizer.Localisation;
 using System.Net.Sockets;
 
 namespace BanchoSharp;
@@ -16,6 +18,12 @@ public class BanchoClient : IBanchoClient
 	private StreamReader? _reader;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
+
+	private int _messagesSentLastPeriod;
+	private readonly int _messagesThreshold;
+	private readonly int _rateLimitIntervalSeconds;
+	private DateTime _resetAt = DateTime.MinValue;
+	
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
 	public IBanchoBotEvents BanchoBotEvents { get; private set; }
@@ -142,7 +150,7 @@ public class BanchoClient : IBanchoClient
 		await SendPrivateMessageAsync("BanchoBot", $"!mp {arg} {name}");
 	}
 
-	public void SimulateMessageReceivedAsync(IIrcMessage message) => OnMessageReceived?.Invoke(message);
+	public void SimulateMessageReceived(IIrcMessage message) => OnMessageReceived?.Invoke(message);
 
 	public IChatChannel? GetChannel(string fullName)
 	{
@@ -177,7 +185,7 @@ public class BanchoClient : IBanchoClient
 			return GetChannel(channelName)!;
 		}
 
-		var ch = new Channel(channelName, ClientConfig.SaveMessages);
+		var ch = new Channel(channelName, ClientConfig.SaveMessags);
 		Channels.Add(ch);
 		Logger.Debug($"Channel added in memory: {ch}");
 		return ch;
@@ -191,6 +199,18 @@ public class BanchoClient : IBanchoClient
 
 	private void RegisterEvents()
 	{
+		// Rate limiter
+		OnDeploy += _ =>
+		{
+			if (_resetAt < DateTime.Now)
+			{
+				_resetAt = DateTime.Now.AddSeconds(_rateLimitIntervalSeconds);
+				_messagesSentLastPeriod = 0;
+			}
+
+			_messagesSentLastPeriod++;
+		};
+		
 		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
 		{
 			Logger.Info($"Joined tournament lobby: {mp}");
@@ -238,38 +258,26 @@ public class BanchoClient : IBanchoClient
 			if (m is IPrivateIrcMessage priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
-				LinkedList<IIrcMessage>? messageHistory;
+				OnPrivateMessageReceived?.Invoke(priv);
+
+				var channel = GetChannel(priv.IsDirect ? priv.Sender : priv.Recipient);
 				if (priv.IsDirect)
 				{
-					// Add channel of user if we don't have it
-					if (!ContainsChannel(priv.Sender))
-					{
-						var ch = new Channel(priv.Sender, ClientConfig.SaveMessages);
-						if (ClientConfig.SaveMessages)
-						{
-							ch.MessageHistory!.AddLast(priv);
-						}
-
-						Channels.Add(ch);
-						OnChannelJoined?.Invoke(ch);
-				
-						Logger.Debug($"Added channel from incoming DM: {priv.Sender}");
-					}
-					
-					messageHistory = GetChannel(priv.Sender)?.MessageHistory;
+					channel ??= AddChannel(priv.Sender);
+					OnAuthenticatedUserDMReceived?.Invoke(priv);
 				}
 				else
 				{
-					messageHistory = GetChannel(priv.Recipient)?.MessageHistory;
+					channel ??= AddChannel(priv.Recipient);
 				}
-
-				if (messageHistory == null)
+				
+				if (channel.MessageHistory == null)
 				{
 					Logger.Warn($"Failed to append to MessageHistory for {priv}");
 				}
 				else
 				{
-					messageHistory.AddLast(priv);
+					channel.MessageHistory.AddLast(priv);
 				}
 			}
 
@@ -283,7 +291,7 @@ public class BanchoClient : IBanchoClient
 					return;
 				}
 
-				var channel = new Channel(channelName, ClientConfig.SaveMessages);
+				var channel = new Channel(channelName, ClientConfig.SaveMessags);
 
 				if (channelName.StartsWith("#mp_"))
 				{
@@ -343,6 +351,14 @@ public class BanchoClient : IBanchoClient
 			throw new IrcClientNotAuthenticatedException();
 		}
 
+		if (_messagesSentLastPeriod == (_messagesThreshold - 1))
+		{
+			// User is rate limited and needs to wait.
+			string timeRemaining = (_resetAt - DateTime.Now).Humanize(precision: 2, maxUnit: TimeUnit.Minute, minUnit: TimeUnit.Second);
+			Logger.Warn($"You are being rate limited. Please wait {timeRemaining} before sending another message. Message discarded.");
+			return;
+		}
+		
 		await _writer!.WriteLineAsync(message);
 		OnDeploy?.Invoke(message);
 	}
@@ -392,7 +408,7 @@ public class BanchoClient : IBanchoClient
 			{
 				OnPrivateMessageReceived?.Invoke(dm);
 
-				if (dm.IsDirect)
+				if (dm.Recipient == ClientConfig.Credentials.Username)
 				{
 					OnAuthenticatedUserDMReceived?.Invoke(dm);
 				}
@@ -425,6 +441,10 @@ public class BanchoClient : IBanchoClient
 #pragma warning disable CS8618
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
+		_messagesSentLastPeriod = 0;
+		_messagesThreshold = clientConfig.IsBot ? 300 : 10;
+		_rateLimitIntervalSeconds = clientConfig.IsBot ? 60 : 5;
+		
 		ClientConfig = clientConfig;
 
 		if (ClientConfig.IgnoredCommands != null)
@@ -446,6 +466,10 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient()
 	{
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
+		
+		_messagesSentLastPeriod = 0;
+		_messagesThreshold = ClientConfig.IsBot ? 300 : 10;
+		_rateLimitIntervalSeconds = ClientConfig.IsBot ? 60 : 5;
 
 		_banchoBotEventInvoker = new BanchoBotEventInvoker(this);
 		BanchoBotEvents = (IBanchoBotEvents)_banchoBotEventInvoker;

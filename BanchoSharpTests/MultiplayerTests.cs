@@ -62,9 +62,9 @@ public class MultiplayerTests
 	private void InvokeEventInvoker(string message) => ((IBanchoBotEventInvoker)_client.BanchoBotEvents)
 		.ProcessMessage(PrivateIrcMessage.CreateFromParameters("BanchoBot", "DummyRecipient", message));
 
-	private void Invoke(IIrcMessage message) => _client.SimulateMessageReceivedAsync(message);
+	private void Invoke(IIrcMessage message) => _client.SimulateMessageReceived(message);
 
-	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceivedAsync(
+	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceived(
 		PrivateIrcMessage.CreateFromParameters("BanchoBot", recipient, banchoBotMessage));
 
 	private void InvokeToLobby(string message) => Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", _lobby.ChannelName, message));

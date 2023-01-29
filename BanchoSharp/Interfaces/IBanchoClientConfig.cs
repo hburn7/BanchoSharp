@@ -15,7 +15,7 @@ public interface IBanchoClientConfig
 	///  otherwise unexpected exceptions may occur - such as when accessing an <see cref="IChatChannel" />'s
 	///  <see cref="IChatChannel.MessageHistory" /> property.
 	/// </summary>
-	public bool SaveMessages { get; }
+	public bool SaveMessags { get; }
 	/// <summary>
 	///  The host of the connection. Can either be irc.ppy.sh or cho.ppy.sh
 	/// </summary>
