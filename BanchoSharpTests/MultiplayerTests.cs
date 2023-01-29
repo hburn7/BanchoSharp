@@ -224,7 +224,7 @@ public class MultiplayerTests
 		1738018, "THE ORAL CIGARETTES", "Flower", "Sakura")]
 	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: TheFatRat - Mayday (feat. Laura Brehm) [[2B] Calling Out Mayday] (https://osu.ppy.sh/b/1605148)",
 		1605148, "TheFatRat", "Mayday (feat. Laura Brehm)", "[2B] Calling Out Mayday")]
-	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_106511377 :Beatmap changed to: Toby Fox - MEGALOVANIA (Camellia Remix) [Tocorn x Ciyus Miapah : Inevitable Demise] (https://osu.ppy.sh/b/2169346)",
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: Toby Fox - MEGALOVANIA (Camellia Remix) [Tocorn x Ciyus Miapah : Inevitable Demise] (https://osu.ppy.sh/b/2169346)",
 		2169346, "Toby Fox", "MEGALOVANIA (Camellia Remix)", "Tocorn x Ciyus Miapah : Inevitable Demise")]
 	public void TestMpSet(string message, int id, string artist, string title, string diff)
 	{
