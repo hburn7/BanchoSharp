@@ -2,6 +2,7 @@ using BanchoSharp.EventArgs;
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
+using System.Text.RegularExpressions;
 
 namespace BanchoSharp.Multiplayer;
 
@@ -78,6 +79,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		Id = id;
 		Name = name;
+		Size = 16;
+		GameMode = GameMode.osu;
 
 		_client.OnMessageReceived += m =>
 		{
@@ -92,6 +95,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			ResetLobbyTimer();
 			ResetMatchTimer();
 			InvokeOnStateChanged();
+			SetAllPlayersReady(false);
 		};
 
 		OnMatchFinished += () =>
@@ -124,6 +128,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			CurrentBeatmap = shell;
 			HostIsChangingMap = false;
 		};
+
+		OnAllPlayersReady += () => SetAllPlayersReady(true);
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -318,7 +324,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
-	public event Action OnAllPlayersReady;
+	public event Action? OnAllPlayersReady;
 	public event Action? OnStateChanged;
 	public void InvokeOnStateChanged() => OnStateChanged?.Invoke();
 
@@ -328,6 +334,14 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
+	private void SetAllPlayersReady(bool ready)
+	{
+		foreach (var player in Players)
+		{
+			player.IsReady = ready;
+		}
+	}
+	
 	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoResponse)
 	{
 		if (IsRoomNameNotification(banchoResponse))
@@ -797,13 +811,15 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		// Beatmap changed to: Camellia - Feelin Sky (Camellia\'s "200step" Self-remix) [Ambivalence] (https://osu.ppy.sh/b/1314987)
 		// Beatmap changed to: Blue Stahli - Anti You [[[REMAP]]] (https://osu.ppy.sh/b/146540)
 
-		string[] splits = banchoResponse.Split(" - ");
+		string[] splits = banchoResponse.Split("Beatmap changed to: ");
 
 		if (!int.TryParse(splits[1].Split(" (https://osu.ppy.sh/b/")[1].Split(')')[0], out int id))
 		{
 			Logger.Warn("Could not determine beatmap ID from bancho response: " + banchoResponse);
 		}
-		
+
+		var difficultyRegex = new Regex(@"\[.+\]");
+
 		string artist = "<unknown>";
 		string title = "<unknown>";
 		string difficulty = "<unknown>";
@@ -812,11 +828,14 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			if (banchoResponse.Contains('[') && banchoResponse.Contains(']'))
 			{
-				artist = splits[0].Split(':')[1].Trim();
-				title = splits[1].Split('[')[0].Trim();
+				artist = splits[1].Split('-')[0].Trim();
+				title = splits[1].Split('-')[1].Split('[')[0].Trim();
 
-				int lastBracketIndex = splits[1].Split('[')[1].LastIndexOf(']');
-				difficulty = splits[1].Split('[')[1][..lastBracketIndex];
+				if (difficultyRegex.IsMatch(banchoResponse))
+				{
+					// Remove leading and trailing brackets
+					difficulty = difficultyRegex.Match(banchoResponse).Value[1..^1];
+				}
 			}
 		}
 		catch (Exception e)
