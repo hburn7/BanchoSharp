@@ -230,7 +230,7 @@ public class MultiplayerTests
 	{
 		var irc = new PrivateIrcMessage(message);
 		
-		_client.SimulateMessageReceivedAsync(irc);
+		_client.SimulateMessageReceived(irc);
 		
 		Assert.Multiple(() =>
 		{
