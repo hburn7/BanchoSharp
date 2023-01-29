@@ -66,9 +66,9 @@ public class MultiplayerTests
 
 	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceivedAsync(
 		PrivateIrcMessage.CreateFromParameters("BanchoBot", recipient, banchoBotMessage));
-	
+
 	private void InvokeToLobby(string message) => Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", _lobby.ChannelName, message));
-	
+
 	[SetUp]
 	public void Setup()
 	{
@@ -100,42 +100,44 @@ public class MultiplayerTests
 		"Players: 1",
 		"Slot 1  Not Ready https://osu.ppy.sh/u/8191845 Stage           [Host / Easy, Hidden, Relax, Flashlight, SpunOut]")]
 	public void TestMpSettingsUpdates(string lobbyName, string historyUrl, int matchId, Mods lobbyMods,
-		int beatmapId, string beatmapTitle, string beatmapArtist, string beatmapDifficulty, LobbyFormat format,
-		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady, int p1Id,
+		int beatmapId, string beatmapTitle, string beatmapArtist, string beatmapDifficulty,
+		LobbyFormat format,
+		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady,
+		int p1Id,
 		string p1Name, int p1Slot, Mods p1Mods, params string[] updates)
-    {
-	    _lobby = new MultiplayerLobby(_client, matchId, lobbyName);
+	{
+		_lobby = new MultiplayerLobby(_client, matchId, lobbyName);
 
-        foreach (string u in updates)
+		foreach (string u in updates)
 		{
 			// Generates the !mp settings response for these parameters and calls it
 			Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", $"#mp_{_lobby.Id}", u));
 		}
 
-        Assert.Multiple(() =>
-        {
-	        // Assert that all parameters are equal to the corresponding multiplayerlobby values
-            Assert.That(_lobby.Name, Is.EqualTo(lobbyName));
-            Assert.That(_lobby.HistoryUrl, Is.EqualTo(historyUrl));
-            Assert.That(_lobby.Id, Is.EqualTo(matchId));
-            Assert.That(_lobby.Mods, Is.EqualTo(lobbyMods));
-            Assert.That(_lobby.CurrentBeatmap.Id, Is.EqualTo(beatmapId));
-            Assert.That(_lobby.CurrentBeatmap.Title, Is.EqualTo(beatmapTitle));
-            Assert.That(_lobby.CurrentBeatmap.Artist, Is.EqualTo(beatmapArtist));
-            Assert.That(_lobby.CurrentBeatmap.Difficulty, Is.EqualTo(beatmapDifficulty));
-            Assert.That(_lobby.Format, Is.EqualTo(format));
-            Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
-            Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
-            Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
-            Assert.That(_lobby.Players[0].IsReady, Is.EqualTo(p1IsReady));
-            Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
-            Assert.That(_lobby.Players[0].Name, Is.EqualTo(p1Name));
-            Assert.That(_lobby.Players[0].Slot, Is.EqualTo(p1Slot));
-            Assert.That(_lobby.Players[0].Mods, Is.EqualTo(p1Mods));
-        });
-    }
+		Assert.Multiple(() =>
+		{
+			// Assert that all parameters are equal to the corresponding multiplayerlobby values
+			Assert.That(_lobby.Name, Is.EqualTo(lobbyName));
+			Assert.That(_lobby.HistoryUrl, Is.EqualTo(historyUrl));
+			Assert.That(_lobby.Id, Is.EqualTo(matchId));
+			Assert.That(_lobby.Mods, Is.EqualTo(lobbyMods));
+			Assert.That(_lobby.CurrentBeatmap.Id, Is.EqualTo(beatmapId));
+			Assert.That(_lobby.CurrentBeatmap.Title, Is.EqualTo(beatmapTitle));
+			Assert.That(_lobby.CurrentBeatmap.Artist, Is.EqualTo(beatmapArtist));
+			Assert.That(_lobby.CurrentBeatmap.Difficulty, Is.EqualTo(beatmapDifficulty));
+			Assert.That(_lobby.Format, Is.EqualTo(format));
+			Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
+			Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
+			Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
+			Assert.That(_lobby.Players[0].IsReady, Is.EqualTo(p1IsReady));
+			Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
+			Assert.That(_lobby.Players[0].Name, Is.EqualTo(p1Name));
+			Assert.That(_lobby.Players[0].Slot, Is.EqualTo(p1Slot));
+			Assert.That(_lobby.Players[0].Mods, Is.EqualTo(p1Mods));
+		});
+	}
 
-    [TestCase(1314987, "Camellia", @"Feelin Sky (Camellia's ""200step"" Self-remix)", "Ambivalence", null,
+	[TestCase(1314987, "Camellia", @"Feelin Sky (Camellia's ""200step"" Self-remix)", "Ambivalence", null,
 		@"Camellia - Feelin Sky (Camellia's ""200step"" Self-remix) [Ambivalence] (https://osu.ppy.sh/b/1314987)")]
 	[TestCase(676065, "FLOOR LEGENDS -KAC 2012-", "KAC 2012 ULTIMATE MEDLEY -HISTORIA SOUND VOLTEX-", "NOVICE", null,
 		@"FLOOR LEGENDS -KAC 2012- - KAC 2012 ULTIMATE MEDLEY -HISTORIA SOUND VOLTEX- [NOVICE] (https://osu.ppy.sh/b/676065)")]
@@ -152,18 +154,42 @@ public class MultiplayerTests
 	{
 		string input = "Beatmap: https://osu.ppy.sh/b/2572163 Kurokotei - Galaxy Collapse";
 		string input2 = "Beatmap: https://osu.ppy.sh/b/2907160 Silentroom - NULCTRL";
-		
+
 		var shell = new BeatmapShell(2572163, "Kurokotei", "Galaxy Collapse", null, _lobby.GameMode);
 		var shell2 = new BeatmapShell(2907160, "Silentroom", "NULCTRL", null, _lobby.GameMode);
-		
+
 		Assert.Multiple(() =>
 		{
 			InvokeToLobby(input);
 			Assert.That(_lobby.CurrentBeatmap, Is.EqualTo(shell));
-		
+
 			InvokeToLobby(input2);
 			Assert.That(_lobby.CurrentBeatmap, Is.EqualTo(shell2));
 		});
+	}
+	
+	[Test]
+	public void TestAllPlayersReady()
+	{
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 1));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 2));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 3", 3));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 4", 4));
+
+		foreach (var player in _lobby.Players)
+		{
+			Assert.That(player.IsReady, Is.False);
+		}
+
+		_lobby.OnAllPlayersReady += () =>
+		{
+			foreach (var player in _lobby.Players)
+			{
+				Assert.That(player.IsReady, Is.True);
+			}
+		};
+
+		InvokeToLobby("All players are ready!");
 	}
 
 	[Test]
@@ -187,6 +213,30 @@ public class MultiplayerTests
 				// This is expected as there is no beatmap ID, title, etc.
 			}
 		}
+	}
+
+	// This also gets executed when the host manually selects a map
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: Various Artists - FINGER CONTROL MEGAPACK [Renard - With Me (LVL1)] (https://osu.ppy.sh/b/3593124)",
+		3593124, "Various Artists", "FINGER CONTROL MEGAPACK", "Renard - With Me (LVL1)")]
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: baker - For a Dead Girl+ [Collab Extra] (https://osu.ppy.sh/b/1444316)",
+		1444316, "baker", "For a Dead Girl+", "Collab Extra")]
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: THE ORAL CIGARETTES - Flower [Sakura] (https://osu.ppy.sh/b/1738018)",
+		1738018, "THE ORAL CIGARETTES", "Flower", "Sakura")]
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: TheFatRat - Mayday (feat. Laura Brehm) [[2B] Calling Out Mayday] (https://osu.ppy.sh/b/1605148)",
+		1605148, "TheFatRat", "Mayday (feat. Laura Brehm)", "[2B] Calling Out Mayday")]
+	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: Toby Fox - MEGALOVANIA (Camellia Remix) [Tocorn x Ciyus Miapah : Inevitable Demise] (https://osu.ppy.sh/b/2169346)",
+		2169346, "Toby Fox", "MEGALOVANIA (Camellia Remix)", "Tocorn x Ciyus Miapah : Inevitable Demise")]
+	public void TestMpSet(string message, int id, string artist, string title, string diff)
+	{
+		var irc = new PrivateIrcMessage(message);
+		
+		_client.SimulateMessageReceivedAsync(irc);
+		
+		Assert.Multiple(() =>
+		{
+			Assert.That(_lobby.CurrentBeatmap, Is.Not.Null);
+			Assert.That(_lobby.CurrentBeatmap!.Equals(new BeatmapShell(id, artist, title, diff, _lobby.GameMode)));
+		});
 	}
 
 	[TestCase("a")]
@@ -214,7 +264,7 @@ public class MultiplayerTests
 		string player1 = "dummy1";
 		string player2 = "dummy2";
 		string player3 = "dummy3";
-		
+
 		_lobby.OnPlayerSlotMove += e =>
 		{
 			var playerMatch = _lobby.FindPlayer(e.Player.Name);
@@ -224,11 +274,11 @@ public class MultiplayerTests
 				Assert.That(playerMatch!.Slot, Is.EqualTo(e.NewSlot));
 			});
 		};
-		
+
 		InvokeEventInvoker(_playerJoined(player1, 1, null));
 		InvokeEventInvoker(_playerJoined(player2, 2, null));
 		InvokeEventInvoker(_playerJoined(player3, 3, null));
-		
+
 		InvokeEventInvoker(_slotChanged(player1, 5));
 		InvokeEventInvoker(_slotChanged(player2, 16));
 		InvokeEventInvoker(_slotChanged(player3, 2));
