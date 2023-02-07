@@ -11,6 +11,7 @@ public interface IMultiplayerPlayer
 	public Mods Mods { get; set; }
 	public int? Score { get; set; }
 	public bool? Passed { get; set; }
+	[Obsolete("IsReady is deprecated, use PlayerState instead", true)]
 	public bool IsReady { get; set; }
 	public PlayerState State { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
