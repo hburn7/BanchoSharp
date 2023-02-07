@@ -12,6 +12,7 @@ public interface IMultiplayerPlayer
 	public int? Score { get; set; }
 	public bool? Passed { get; set; }
 	public bool IsReady { get; set; }
+	public PlayerState State { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
 
 	/// <summary>

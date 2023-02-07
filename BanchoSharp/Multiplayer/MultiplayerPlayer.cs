@@ -19,6 +19,7 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 		Slot = slot;
 		Team = team;
 		Mods = mods;
+		State = PlayerState.NotReady;
 	}
 
 	public int? Id { get; set; }
@@ -30,7 +31,9 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 	public Mods Mods { get; set; }
 	public int? Score { get; set; }
 	public bool? Passed { get; set; }
+	[Obsolete("IsReady is deprecated, refer to PlayerState instead", true)]
 	public bool IsReady { get; set; }
+	public PlayerState State { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
 	public string TargetableName() => Id.HasValue ? $"#{Id}" : Name.Replace(' ', '_');
 

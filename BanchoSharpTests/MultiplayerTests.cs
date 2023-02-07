@@ -90,7 +90,7 @@ public class MultiplayerTests
 	// 	"Slot 1  Not Ready https://osu.ppy.sh/u/8191845 Stage           [Host]")]
 	[TestCase("OWC 2021: (United States) vs. (Germany)", "https://osu.ppy.sh/mp/106275696", 106275696,
 		Mods.HalfTime | Mods.Freemod, 1096903, "Unmei no Dark Side -Rolling Gothic mix", "Kanpyohgo", "Satellite's Lunatic",
-		LobbyFormat.TagCoop, WinCondition.Score, TeamColor.None, true, false,
+		LobbyFormat.TagCoop, WinCondition.Score, TeamColor.None, true, PlayerState.NotReady,
 		8191845, "Stage", 1,
 		Mods.Easy | Mods.Hidden | Mods.Relax | Mods.Flashlight | Mods.SpunOut,
 		"Room name: OWC 2021: (United States) vs. (Germany), History: https://osu.ppy.sh/mp/106275696",
@@ -102,7 +102,7 @@ public class MultiplayerTests
 	public void TestMpSettingsUpdates(string lobbyName, string historyUrl, int matchId, Mods lobbyMods,
 		int beatmapId, string beatmapTitle, string beatmapArtist, string beatmapDifficulty,
 		LobbyFormat format,
-		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady,
+		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, PlayerState p1State,
 		int p1Id,
 		string p1Name, int p1Slot, Mods p1Mods, params string[] updates)
 	{
@@ -129,7 +129,7 @@ public class MultiplayerTests
 			Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
 			Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
 			Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
-			Assert.That(_lobby.Players[0].IsReady, Is.EqualTo(p1IsReady));
+			Assert.That(_lobby.Players[0].State, Is.EqualTo(p1State));
 			Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
 			Assert.That(_lobby.Players[0].Name, Is.EqualTo(p1Name));
 			Assert.That(_lobby.Players[0].Slot, Is.EqualTo(p1Slot));
@@ -178,14 +178,14 @@ public class MultiplayerTests
 
 		foreach (var player in _lobby.Players)
 		{
-			Assert.That(player.IsReady, Is.False);
+			Assert.That(player.State, Is.EqualTo(PlayerState.NotReady));
 		}
 
 		_lobby.OnAllPlayersReady += () =>
 		{
 			foreach (var player in _lobby.Players)
 			{
-				Assert.That(player.IsReady, Is.True);
+				Assert.That(player.State, Is.EqualTo(PlayerState.Ready));
 			}
 		};
 
@@ -256,6 +256,36 @@ public class MultiplayerTests
 		};
 
 		InvokeEventInvoker(joinStr);
+	}
+
+	[TestCase("Slot 1  No Map    https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.NoMap)]
+	[TestCase("Slot 1  Not Ready https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.NotReady)]
+	[TestCase("Slot 1  Ready https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.Ready)]
+	[TestCase("Slot 1  Not Ready https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.NotReady)]
+	[TestCase("Slot 1  Ready https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.Ready)]
+	[TestCase("Slot 1  No Map https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.NoMap)]
+	public void TestPlayerState(string message, bool isHost, PlayerState state)
+	{
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "zfr", 1));
+		InvokeToLobby(message);
+		var target = _lobby.FindPlayer("zfr");
+		Assert.Multiple(() =>
+		{
+			Assert.That(target, Is.Not.Null);
+
+			if (isHost)
+			{
+				Assert.That(_lobby.Host, Is.EqualTo(target));
+			}
+			
+			Assert.That(target!.State, Is.EqualTo(state));
+		});
+	}
+
+	[Test]
+	public void TestDoubleTimeNightcore()
+	{
+		// :BanchoBot!cho@ppy.sh PRIVMSG #mp_106715183 :Active mods: DoubleTime, Nightcore
 	}
 
 	[Test]

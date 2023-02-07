@@ -95,7 +95,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			ResetLobbyTimer();
 			ResetMatchTimer();
 			InvokeOnStateChanged();
-			SetAllPlayersReady(false);
+			SetAllPlayerStates(PlayerState.NotReady);
 		};
 
 		OnMatchFinished += () =>
@@ -129,7 +129,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			HostIsChangingMap = false;
 		};
 
-		OnAllPlayersReady += () => SetAllPlayersReady(true);
+		OnAllPlayersReady += () => SetAllPlayerStates(PlayerState.Ready);
 	}
 
 	public event Action? OnSettingsUpdated;
@@ -334,11 +334,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void ResetLobbyTimer() => _lobbyTimerEnd = null;
 	private void ResetMatchTimer() => _matchTimerEnd = null;
 
-	private void SetAllPlayersReady(bool ready)
+	private void SetAllPlayerStates(PlayerState state)
 	{
 		foreach (var player in Players)
 		{
-			player.IsReady = ready;
+			player.State = state;
 		}
 	}
 	
@@ -581,9 +581,25 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 		}
 
-		bool isReady = !banchoResponse[..playerNameBegin].Contains("Not Ready");
+		PlayerState state;
+		if (banchoResponse[..playerNameBegin].Contains("Not Ready"))
+		{
+			state = PlayerState.NotReady;
+		}
+		else if (banchoResponse[..playerNameBegin].Contains("Ready"))
+		{
+			state = PlayerState.Ready;
+		}
+		else if (banchoResponse[..playerNameBegin].Contains("No Map"))
+		{
+			state = PlayerState.NoMap;
+		}
+		else
+		{
+			state = PlayerState.Undefined;
+		}
 
-		player.IsReady = isReady;
+		player.State = state;
 		player.Id = playerId;
 
 		if (playerInfo != null)
