@@ -19,10 +19,10 @@ public class BanchoClient : IBanchoClient
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
 
-	private int _messagesSentLastPeriod;
-	private readonly int _messagesThreshold;
-	private readonly int _rateLimitIntervalSeconds;
-	private DateTime _resetAt = DateTime.MinValue;
+	private DateTime _resetPeriod = DateTime.MinValue;
+	private int _deploysInPeriod = 0;
+	private int _messagesThreshold;
+	private int _rateLimitIntervalSeconds;
 	
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
@@ -202,13 +202,7 @@ public class BanchoClient : IBanchoClient
 		// Rate limiter
 		OnDeploy += _ =>
 		{
-			if (_resetAt < DateTime.Now)
-			{
-				_resetAt = DateTime.Now.AddSeconds(_rateLimitIntervalSeconds);
-				_messagesSentLastPeriod = 0;
-			}
-
-			_messagesSentLastPeriod++;
+			
 		};
 		
 		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
@@ -351,15 +345,25 @@ public class BanchoClient : IBanchoClient
 			throw new IrcClientNotAuthenticatedException();
 		}
 
-		if (_messagesSentLastPeriod == (_messagesThreshold - 1))
+		await _writer!.WriteLineAsync(message);
+		
+		// Rate limiter
+		if (_resetPeriod < DateTime.Now)
 		{
-			// User is rate limited and needs to wait.
-			string timeRemaining = (_resetAt - DateTime.Now).Humanize(precision: 2, maxUnit: TimeUnit.Minute, minUnit: TimeUnit.Second);
-			Logger.Warn($"You are being rate limited. Please wait {timeRemaining} before sending another message. Message discarded.");
-			return;
+			_resetPeriod = DateTime.Now.AddSeconds(_rateLimitIntervalSeconds);
+			_deploysInPeriod = 0;
+		}
+		else
+		{
+			_deploysInPeriod++;
+
+			if (_deploysInPeriod >= _messagesThreshold)
+			{
+				Logger.Warn($"Rate limit hit. Waiting {(_resetPeriod - DateTime.Now).Humanize()} before continuing.");
+				await Task.Delay(_resetPeriod - DateTime.Now);
+			}
 		}
 		
-		await _writer!.WriteLineAsync(message);
 		OnDeploy?.Invoke(message);
 	}
 
@@ -441,9 +445,8 @@ public class BanchoClient : IBanchoClient
 #pragma warning disable CS8618
 	public BanchoClient(BanchoClientConfig clientConfig)
 	{
-		_messagesSentLastPeriod = 0;
-		_messagesThreshold = clientConfig.IsBot ? 300 : 10;
 		_rateLimitIntervalSeconds = clientConfig.IsBot ? 60 : 5;
+		_messagesThreshold = clientConfig.IsBot ? 300 : 10;
 		
 		ClientConfig = clientConfig;
 
@@ -467,7 +470,6 @@ public class BanchoClient : IBanchoClient
 	{
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
 		
-		_messagesSentLastPeriod = 0;
 		_messagesThreshold = ClientConfig.IsBot ? 300 : 10;
 		_rateLimitIntervalSeconds = ClientConfig.IsBot ? 60 : 5;
 

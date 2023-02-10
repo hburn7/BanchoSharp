@@ -7,27 +7,11 @@ namespace BanchoSharpTests;
 
 public class MultiplayerTests
 {
-	private const string _mpStart = "Started the match";
-	private const string _mpAbort = "Aborted the match";
-
-	// Events
-	private const string _matchStarted = "The match has started!";
-	private const string _matchFinished = "The match has finished!";
 	private IBanchoClient _client;
 	private IMultiplayerLobby _lobby;
 	// Commands
 	// private const string _mpSettings =
 	// 	"Room name: 3.00* - 5.00* | Auto Host Rotate, History: https://osu.ppy.sh/mp/104803682\nBeatmap: https://osu.ppy.sh/b/2216531 Sayuri - Koukai no Uta (TV Size)\nTeam mode: HeadToHead, Win condition: Score\nActive mods: Freemod\nPlayers: 7\nSlot 1  Not Ready https://osu.ppy.sh/u/22547049 Player 1        [Host]\nSlot 2  Not Ready https://osu.ppy.sh/u/14607058 Player 2        [Hidden, HardRock]\nSlot 3  Not Ready https://osu.ppy.sh/u/28851081 Player 3        \nSlot 4  Not Ready https://osu.ppy.sh/u/27831164 Player 4        \nSlot 6  Not Ready https://osu.ppy.sh/u/18028068 PlayerNameLarge1[Hidden, HardRock]\nSlot 7  Not Ready https://osu.ppy.sh/u/22940358 Player 6        \nSlot 8  Not Ready https://osu.ppy.sh/u/11796227 Player 7";
-
-	private string _mpSettings(string lobbyName, int lobbyId, string curBeatmapName, int curBeatmapId,
-		LobbyFormat curFormat, WinCondition winCondition, Mods activeMods) => new StringBuilder($"Room name: {lobbyName}, History: https://osu.ppy.sh/mp/{lobbyId}")
-		                                                                      .AppendLine($"Beatmap: https://osu.ppy.sh/b/{curBeatmapId} {curBeatmapName}")
-		                                                                      .AppendLine($"Team mode: {curFormat}, Win condition: {winCondition}")
-		                                                                      .AppendLine($"Active mods: {activeMods.ToAbbreviatedForm()}")
-		                                                                      .ToString();
-
-	private string _mpHost(string name) => $"Changed match host to {name}";
-	private string _mpMap(string id) => $"Changed beatmap to https://osu.ppy.sh/b/{id} EXAMPLE ARTIST - EXAMPLE TITLE";
 
 	private string _playerJoined(string name, int slot, string? team)
 	{
@@ -47,25 +31,12 @@ public class MultiplayerTests
 	}
 
 	private string _slotChanged(string name, int slot) => $"{name} moved to slot {slot}";
-	private string _playerLeft(string name) => $"{name} left the game.";
-
-	private string _matchFinishedPlayerStats(string name, int score, bool passed) => new StringBuilder($"{name} finished playing (Score: {score}, ")
-	                                                                                 .Append(passed ? "PASSED" : "FAILED")
-	                                                                                 .Append(").")
-	                                                                                 .ToString();
-
-	private string _hostChanged(string name) => $"{name} became the host.";
-	private string _beatmapChanged(string title, string diff, int id) => $"Beatmap changed to: {title} [{diff}] (https://osu.ppy.sh/b/{id})";
-	private BanchoClient DefaultConfig() => new();
 	private IMultiplayerLobby DefaultLobby(IBanchoClient client) => new MultiplayerLobby(client, 1, "test");
 
 	private void InvokeEventInvoker(string message) => ((IBanchoBotEventInvoker)_client.BanchoBotEvents)
 		.ProcessMessage(PrivateIrcMessage.CreateFromParameters("BanchoBot", "DummyRecipient", message));
 
 	private void Invoke(IIrcMessage message) => _client.SimulateMessageReceived(message);
-
-	private void InvokeBancho(string banchoBotMessage, string recipient) => _client.SimulateMessageReceived(
-		PrivateIrcMessage.CreateFromParameters("BanchoBot", recipient, banchoBotMessage));
 
 	private void InvokeToLobby(string message) => Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", _lobby.ChannelName, message));
 
@@ -76,21 +47,9 @@ public class MultiplayerTests
 		_lobby = DefaultLobby(_client);
 	}
 
-	// [TestCase("Room name: test, History: https://osu.ppy.sh/mp/106275696", 
-	// 	"Beatmap: https://osu.ppy.sh/b/3798824 fromis_9 - LOVE BOMB [Heart]", 
-	// 	"Team mode: HeadToHead, Win condition: Score", 
-	// 	"Active mods: DoubleTime", 
-	// 	"Players: 1", 
-	// 	"Slot 1  Not Ready https://osu.ppy.sh/u/8191845 Stage           [Host]")]
-	// [TestCase("Room name: OWC 2021: (United States) vs. (Germany), History: https://osu.ppy.sh/mp/106275696", 
-	// 	"Beatmap: https://osu.ppy.sh/b/3267589 Multiple Artists - thing [lol 235]", 
-	// 	"Team mode: TagCoop, Win condition: Score", 
-	// 	"Active mods: NoFail, Hidden, HardRock, Flashlight", 
-	// 	"Players: 1", 
-	// 	"Slot 1  Not Ready https://osu.ppy.sh/u/8191845 Stage           [Host]")]
 	[TestCase("OWC 2021: (United States) vs. (Germany)", "https://osu.ppy.sh/mp/106275696", 106275696,
 		Mods.HalfTime | Mods.Freemod, 1096903, "Unmei no Dark Side -Rolling Gothic mix", "Kanpyohgo", "Satellite's Lunatic",
-		LobbyFormat.TagCoop, WinCondition.Score, TeamColor.None, true, false,
+		LobbyFormat.TagCoop, WinCondition.Score, TeamColor.None, true, PlayerState.NotReady,
 		8191845, "Stage", 1,
 		Mods.Easy | Mods.Hidden | Mods.Relax | Mods.Flashlight | Mods.SpunOut,
 		"Room name: OWC 2021: (United States) vs. (Germany), History: https://osu.ppy.sh/mp/106275696",
@@ -102,7 +61,7 @@ public class MultiplayerTests
 	public void TestMpSettingsUpdates(string lobbyName, string historyUrl, int matchId, Mods lobbyMods,
 		int beatmapId, string beatmapTitle, string beatmapArtist, string beatmapDifficulty,
 		LobbyFormat format,
-		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, bool p1IsReady,
+		WinCondition winCondition, TeamColor p1TeamColor, bool p1IsHost, PlayerState p1State,
 		int p1Id,
 		string p1Name, int p1Slot, Mods p1Mods, params string[] updates)
 	{
@@ -129,7 +88,7 @@ public class MultiplayerTests
 			Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
 			Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
 			Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
-			Assert.That(_lobby.Players[0].IsReady, Is.EqualTo(p1IsReady));
+			Assert.That(_lobby.Players[0].State, Is.EqualTo(p1State));
 			Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
 			Assert.That(_lobby.Players[0].Name, Is.EqualTo(p1Name));
 			Assert.That(_lobby.Players[0].Slot, Is.EqualTo(p1Slot));
@@ -178,14 +137,14 @@ public class MultiplayerTests
 
 		foreach (var player in _lobby.Players)
 		{
-			Assert.That(player.IsReady, Is.False);
+			Assert.That(player.State, Is.EqualTo(PlayerState.NotReady));
 		}
 
 		_lobby.OnAllPlayersReady += () =>
 		{
 			foreach (var player in _lobby.Players)
 			{
-				Assert.That(player.IsReady, Is.True);
+				Assert.That(player.State, Is.EqualTo(PlayerState.Ready));
 			}
 		};
 
@@ -256,6 +215,36 @@ public class MultiplayerTests
 		};
 
 		InvokeEventInvoker(joinStr);
+	}
+
+	[TestCase("Slot 1  No Map    https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.NoMap)]
+	[TestCase("Slot 1  Not Ready https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.NotReady)]
+	[TestCase("Slot 1  Ready https://osu.ppy.sh/u/11536421 zfr             ", false, PlayerState.Ready)]
+	[TestCase("Slot 1  Not Ready https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.NotReady)]
+	[TestCase("Slot 1  Ready https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.Ready)]
+	[TestCase("Slot 1  No Map https://osu.ppy.sh/u/11536421 zfr             [Host]", true, PlayerState.NoMap)]
+	public void TestPlayerState(string message, bool isHost, PlayerState state)
+	{
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "zfr", 1));
+		InvokeToLobby(message);
+		var target = _lobby.FindPlayer("zfr");
+		Assert.Multiple(() =>
+		{
+			Assert.That(target, Is.Not.Null);
+
+			if (isHost)
+			{
+				Assert.That(_lobby.Host, Is.EqualTo(target));
+			}
+			
+			Assert.That(target!.State, Is.EqualTo(state));
+		});
+	}
+
+	[Test]
+	public void TestDoubleTimeNightcore()
+	{
+		// :BanchoBot!cho@ppy.sh PRIVMSG #mp_106715183 :Active mods: DoubleTime, Nightcore
 	}
 
 	[Test]
