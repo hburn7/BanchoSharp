@@ -109,6 +109,21 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestMpClearhost()
+	{
+		var dummy = new MultiplayerPlayer(_lobby, "test", 1);
+		
+		_lobby.Players.Add(dummy);
+		Assert.That(_lobby.Host, Is.Null);
+		
+		InvokeToLobby("!mp host test");
+		Assert.That(_lobby.Host, Is.EqualTo(dummy));
+		
+		InvokeToLobby("!mp clearhost");
+		Assert.That(_lobby.Host, Is.Null);
+	}
+
+	[Test]
 	public void TestMpSettingsBeatmap()
 	{
 		string input = "Beatmap: https://osu.ppy.sh/b/2572163 Kurokotei - Galaxy Collapse";
