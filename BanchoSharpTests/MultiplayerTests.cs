@@ -116,10 +116,10 @@ public class MultiplayerTests
 		_lobby.Players.Add(dummy);
 		Assert.That(_lobby.Host, Is.Null);
 		
-		InvokeToLobby("!mp host test");
+		InvokeToLobby("test became the host.");
 		Assert.That(_lobby.Host, Is.EqualTo(dummy));
 		
-		InvokeToLobby("!mp clearhost");
+		InvokeToLobby("Cleared match host");
 		Assert.That(_lobby.Host, Is.Null);
 	}
 

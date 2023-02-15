@@ -378,6 +378,10 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			OnMatchStarted?.Invoke();
 			MatchInProgress = true;
 		}
+		else if (IsMpClearHostNotification(banchoResponse))
+		{
+			this.Host = null;
+		}
 		else if (IsMatchFinishedNotification(banchoResponse))
 		{
 			OnMatchFinished?.Invoke();
@@ -447,6 +451,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchHostChangedNotification(string banchoResponse) => banchoResponse.EndsWith(" became the host.");
 	private bool IsPlayerJoinedInSlotNotification(string banchoResponse) => banchoResponse.Contains(" joined in slot ");
 	private bool IsMatchStartedNotification(string banchoResponse) => banchoResponse.Equals("The match has started!");
+	private bool IsMpClearHostNotification(string banchoResponse) => banchoResponse.Equals("Cleared match host");
 	private bool IsMatchFinishedNotification(string banchoResponse) => banchoResponse.Equals("The match has finished!");
 	private bool IsPlayerMovedToSlotNotification(string banchoResponse) => banchoResponse.Contains("moved to slot");
 	private bool IsPlayersNotification(string banchoResponse) => banchoResponse.StartsWith("Players:");
