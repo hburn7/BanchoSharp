@@ -140,6 +140,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchAborted;
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
+	public event Action<GameMode, GameMode>? OnGameModeChanged;
 	public event Action? OnClosed;
 	public event Action<IMultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
@@ -344,9 +345,31 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	
 	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoResponse)
 	{
+		var parser = new MpSetResponseParser(banchoResponse);
+		var cfg = parser.ResolvedConfiguration;
+		if (parser.IsMpSetResponse && cfg.HasValue)
+		{
+			Format = cfg.Value.Format;
+			if (cfg.Value.WinCondition.HasValue)
+			{
+				WinCondition = cfg.Value.WinCondition.Value;
+			}
+
+			if (cfg.Value.Size.HasValue)
+			{
+				Size = cfg.Value.Size.Value;
+			}
+
+			return;
+		}
+		
 		if (IsRoomNameNotification(banchoResponse))
 		{
 			UpdateName(banchoResponse);
+		}
+		else if (IsGameModeUpdateNotification(banchoResponse))
+		{
+			UpdateGameMode(banchoResponse);
 		}
 		else if (IsTeamModeNotification(banchoResponse))
 		{
@@ -467,6 +490,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsAllPlayersReadyNotification(string banchoResponse) => banchoResponse.StartsWith("All players are ready");
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
 	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
+	private bool IsGameModeUpdateNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match mode to ");
 
 	private void UpdateName(string banchoResponse)
 	{
@@ -479,6 +503,38 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		Name = name;
 		InvokeOnStateChanged();
+	}
+
+	private void UpdateGameMode(string banchoResponse)
+	{
+		string[] splits = banchoResponse.Split("Changed match mode to ");
+		string token = splits[1];
+		GameMode? newGameMode = null;
+		switch (token)
+		{
+			// Parse as GameMode enum
+			case "Osu":
+				newGameMode = GameMode.osu;
+				break;
+			case "Taiko":
+				newGameMode = GameMode.osuTaiko;
+				break;
+			case "CatchTheBeat":
+				newGameMode = GameMode.osuCatch;
+				break;
+			case "OsuMania":
+				newGameMode = GameMode.osuMania;
+				break;
+			default:
+				Logger.Warn($"Could not parse game mode from BanchoBot game mode update notification: '{banchoResponse}'");
+				break;
+		}
+
+		if (newGameMode != null)
+		{
+			OnGameModeChanged?.Invoke(GameMode, newGameMode.Value);
+			GameMode = newGameMode.Value;
+		}
 	}
 
 	private IMultiplayerPlayer? FindPlayer(string name) => Players.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));

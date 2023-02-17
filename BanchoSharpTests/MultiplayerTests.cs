@@ -37,7 +37,6 @@ public class MultiplayerTests
 		.ProcessMessage(PrivateIrcMessage.CreateFromParameters("BanchoBot", "DummyRecipient", message));
 
 	private void Invoke(IIrcMessage message) => _client.SimulateMessageReceived(message);
-
 	private void InvokeToLobby(string message) => Invoke(PrivateIrcMessage.CreateFromParameters("BanchoBot", _lobby.ChannelName, message));
 
 	[SetUp]
@@ -108,17 +107,87 @@ public class MultiplayerTests
 		_lobby.OnBeatmapChanged += shell => { Assert.That(shell, Is.EqualTo(beatmap)); };
 	}
 
+	[TestCase("Changed match mode to Osu", GameMode.osu)]
+	[TestCase("Changed match mode to Taiko", GameMode.osuTaiko)]
+	[TestCase("Changed match mode to CatchTheBeat", GameMode.osuCatch)]
+	[TestCase("Changed match mode to OsuMania", GameMode.osuMania)]
+	public void TestMatchModeChange(string banchoResponse, GameMode mode)
+	{
+		InvokeToLobby(banchoResponse);
+		Assert.That(_lobby.GameMode, Is.EqualTo(mode));
+	}
+	
+	[Test]
+	public void TestMpSetResponseParser()
+	{
+		var resBuilder = new StringBuilder("Changed match settings to ");
+		// [# slots, ]<format>, <win condition>
+		string[] formats = { "HeadToHead", "TagCoop", "TeamVs", "TagTeamVs" };
+		string[] winConditions = { "Score", "Accuracy", "Combo", "ScoreV2" };
+		string[] slots = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16" };
+
+		// Test format only
+		foreach (string format in formats)
+		{
+			resBuilder.Append($"{format}");
+			InvokeToLobby(resBuilder.ToString());
+			Assert.That(_lobby.Format, Is.EqualTo((LobbyFormat)Enum.Parse(typeof(LobbyFormat), format)));
+			resBuilder.Clear();
+			resBuilder.Append("Changed match settings to ");
+		}
+
+		// Test format and wincondition only
+		foreach (string format in formats)
+		{
+			foreach (string winCondition in winConditions)
+			{
+				resBuilder.Append($"{format}, {winCondition}");
+				InvokeToLobby(resBuilder.ToString());
+				Assert.Multiple(() =>
+				{
+					Assert.That(_lobby.Format, Is.EqualTo((LobbyFormat)Enum.Parse(typeof(LobbyFormat), format)));
+					Assert.That(_lobby.WinCondition, Is.EqualTo((WinCondition)Enum.Parse(typeof(WinCondition), winCondition)));
+				});
+
+				resBuilder.Clear();
+				resBuilder.Append("Changed match settings to ");
+			}
+		}
+
+		// Test format, wincondition and slots
+		foreach (string format in formats)
+		{
+			foreach (string winCondition in winConditions)
+			{
+				foreach (string slot in slots)
+				{
+					resBuilder.Append($"{slot} slots, {format}, {winCondition}");
+					InvokeToLobby(resBuilder.ToString());
+					Assert.Multiple(() =>
+					{
+						Assert.That(_lobby.Format, Is.EqualTo((LobbyFormat)Enum.Parse(typeof(LobbyFormat), format)));
+						Assert.That(_lobby.WinCondition, Is.EqualTo((WinCondition)Enum.Parse(typeof(WinCondition), winCondition)));
+						Assert.That(_lobby.Size, Is.EqualTo(int.Parse(slot)));
+					});
+
+					resBuilder.Clear();
+					resBuilder.Append("Changed match settings to ");
+				}
+			}
+		}
+	}
+
 	[Test]
 	public void TestMpClearhost()
 	{
 		var dummy = new MultiplayerPlayer(_lobby, "test", 1);
-		
+
 		_lobby.Players.Add(dummy);
 		Assert.That(_lobby.Host, Is.Null);
-		
+
 		InvokeToLobby("test became the host.");
 		Assert.That(_lobby.Host, Is.EqualTo(dummy));
-		
+
 		InvokeToLobby("Cleared match host");
 		Assert.That(_lobby.Host, Is.Null);
 	}
@@ -141,7 +210,7 @@ public class MultiplayerTests
 			Assert.That(_lobby.CurrentBeatmap, Is.EqualTo(shell2));
 		});
 	}
-	
+
 	[Test]
 	public void TestAllPlayersReady()
 	{
@@ -198,14 +267,16 @@ public class MultiplayerTests
 		1738018, "THE ORAL CIGARETTES", "Flower", "Sakura")]
 	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: TheFatRat - Mayday (feat. Laura Brehm) [[2B] Calling Out Mayday] (https://osu.ppy.sh/b/1605148)",
 		1605148, "TheFatRat", "Mayday (feat. Laura Brehm)", "[2B] Calling Out Mayday")]
-	[TestCase(":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: Toby Fox - MEGALOVANIA (Camellia Remix) [Tocorn x Ciyus Miapah : Inevitable Demise] (https://osu.ppy.sh/b/2169346)",
+	[TestCase(
+		":BanchoBot!cho@ppy.sh PRIVMSG #mp_1 :Beatmap changed to: Toby Fox - MEGALOVANIA (Camellia Remix) [Tocorn x Ciyus Miapah : Inevitable Demise] (https://osu.ppy.sh/b/2169346)",
 		2169346, "Toby Fox", "MEGALOVANIA (Camellia Remix)", "Tocorn x Ciyus Miapah : Inevitable Demise")]
-	public void TestMpSet(string message, int id, string artist, string title, string diff)
+	public void TestMpSet(string message, int id, string artist, string title,
+		string diff)
 	{
 		var irc = new PrivateIrcMessage(message);
-		
+
 		_client.SimulateMessageReceived(irc);
-		
+
 		Assert.Multiple(() =>
 		{
 			Assert.That(_lobby.CurrentBeatmap, Is.Not.Null);
@@ -251,7 +322,7 @@ public class MultiplayerTests
 			{
 				Assert.That(_lobby.Host, Is.EqualTo(target));
 			}
-			
+
 			Assert.That(target!.State, Is.EqualTo(state));
 		});
 	}

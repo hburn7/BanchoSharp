@@ -12,7 +12,7 @@
         <PackageProjectUrl>https://github.com/hburn7/BanchoSharp</PackageProjectUrl>
         <RepositoryUrl>https://github.com/hburn7/BanchoSharp</RepositoryUrl>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-        <PackageVersion>1.3.0</PackageVersion>
+        <PackageVersion>1.4.0</PackageVersion>
     </PropertyGroup>
 
     <ItemGroup>
