@@ -2,6 +2,7 @@
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
+using BanchoSharp.Multiplayer;
 using Humanizer;
 using Humanizer.Localisation;
 using System.Net.Sockets;
@@ -98,7 +99,12 @@ public class BanchoClient : IBanchoClient
 		}
 
 		name = name.Replace(' ', '_');
-		if (name.StartsWith("#"))
+		if (name.StartsWith("#mp_") && int.TryParse(name.Split("#mp_")[1], out int id))
+		{
+			var mp = new MultiplayerLobby(this, id, $"unknown ({name})");
+			await JoinTournamentLobbyAsync(mp);
+		}
+		else if (name.StartsWith("#"))
 		{
 			await Execute($"JOIN {name}");
 			
