@@ -200,11 +200,6 @@ public class BanchoClient : IBanchoClient
 	private void RegisterEvents()
 	{
 		// Rate limiter
-		OnDeploy += _ =>
-		{
-			
-		};
-		
 		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
 		{
 			Logger.Info($"Joined tournament lobby: {mp}");
