@@ -2,6 +2,7 @@
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
+using BanchoSharp.Multiplayer;
 using Humanizer;
 using Humanizer.Localisation;
 using System.Net.Sockets;
@@ -98,10 +99,15 @@ public class BanchoClient : IBanchoClient
 		}
 
 		name = name.Replace(' ', '_');
-		if (name.StartsWith("#"))
+		if (name.StartsWith("#mp_") && int.TryParse(name.Split("#mp_")[1], out int id))
+		{
+			var mp = new MultiplayerLobby(this, id, $"unknown ({name})");
+			await JoinTournamentLobbyAsync(mp);
+		}
+		else if (name.StartsWith("#"))
 		{
 			await Execute($"JOIN {name}");
-
+			
 			var channel = AddChannel(name);
 			OnChannelJoined?.Invoke(channel);
 		}
@@ -109,6 +115,19 @@ public class BanchoClient : IBanchoClient
 		{
 			await QueryUserAsync(name);
 		}
+	}
+
+	public async Task JoinTournamentLobbyAsync(IMultiplayerLobby lobby)
+	{
+		if (ContainsChannel(lobby.ChannelName))
+		{
+			return;
+		}
+		
+		await Execute($"JOIN {lobby.ChannelName}");
+		Channels.Add(lobby);
+		Logger.Debug($"Added tournament lobby channel to memory: {lobby}");
+		OnChannelJoined?.Invoke(lobby);
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -199,19 +218,15 @@ public class BanchoClient : IBanchoClient
 
 	private void RegisterEvents()
 	{
-		// Rate limiter
-		OnDeploy += _ =>
+		BanchoBotEvents.OnTournamentLobbyCreated += async mp =>
 		{
-			
-		};
-		
-		BanchoBotEvents.OnTournamentLobbyCreated += mp =>
-		{
-			Logger.Info($"Joined tournament lobby: {mp}");
-			Channels.Add(mp);
-			Logger.Debug($"Added tournament lobby channel to memory: {mp}");
+			Logger.Info($"Tournament lobby created: {mp}");
+
+			await JoinTournamentLobbyAsync(mp);
 			OnChannelJoined?.Invoke(mp);
 		};
+
+		OnDeploy += m => Logger.Trace($"(deploy) {m}");
 
 		OnConnected += () => Logger.Info("Client connected");
 		OnDisconnected += () =>
