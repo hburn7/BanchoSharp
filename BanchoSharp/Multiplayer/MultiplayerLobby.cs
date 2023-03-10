@@ -129,6 +129,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			HostIsChangingMap = false;
 		};
 
+		OnPlayerChangedTeam += _ => InvokeOnStateChanged();
+
 		OnAllPlayersReady += () => SetAllPlayerStates(PlayerState.Ready);
 	}
 
@@ -371,6 +373,14 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdateGameMode(banchoResponse);
 		}
+		else if (IsSelfInvokedTeamSwapNotification(banchoResponse))
+		{
+			UpdatePlayerTeamSelfInvoked(banchoResponse);
+		}
+		else if (IsManualTeamSwapNotification(banchoResponse))
+		{
+			UpdatePlayerTeamManuallyInvoked(banchoResponse);
+		}
 		else if (IsTeamModeNotification(banchoResponse))
 		{
 			UpdateFormatWincondition(banchoResponse);
@@ -465,6 +475,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		InvokeOnStateChanged();
 	}
 
+	private bool IsManualTeamSwapNotification(string banchoResponse) => banchoResponse.StartsWith("Moved") && banchoResponse.Contains("to team ");
 	private bool IsRoomNameNotification(string banchoResponse) => banchoResponse.StartsWith("Room name:");
 	private bool IsTeamModeNotification(string banchoResponse) => banchoResponse.StartsWith("Team mode:");
 	private bool IsHostChangingMapNotification(string banchoResponse) => banchoResponse.Equals("Host is changing map...");
@@ -492,6 +503,35 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
 	private bool IsGameModeUpdateNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match mode to ");
 
+	private bool IsSelfInvokedTeamSwapNotification(string banchoResponse) => banchoResponse.Contains("changed to Red") || banchoResponse.Contains("changed to Blue");
+
+	private void UpdatePlayerTeamManuallyInvoked(string banchoResponse)
+	{
+		var splits = banchoResponse.Split();
+		var player = splits[1];
+		var team = splits[^1];
+		
+		if(team != "Red" && team != "Blue")
+			return;
+		
+		var match = FindPlayer(player);
+		if(match == null)
+			return;
+		
+		var prevTeam = match.Team;
+		switch (team.ToLower())
+		{
+			case "red":
+				match.Team = TeamColor.Red;
+				break;
+			case "blue":
+				match.Team = TeamColor.Blue;
+				break;
+		}
+		
+		OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
+	}
+
 	private void UpdateName(string banchoResponse)
 	{
 		// Process room name
@@ -503,6 +543,32 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		Name = name;
 		InvokeOnStateChanged();
+	}
+
+	private void UpdatePlayerTeamSelfInvoked(string banchoResponse)
+	{
+		string player = banchoResponse.Split()[0];
+		string team = banchoResponse.Split()[^1];
+		
+		if(team != "Red" && team != "Blue")
+			return;
+
+		var match = FindPlayer(player);
+		if(match == null)
+			return;
+
+		var prevTeam = match.Team;
+		switch (team.ToLower())
+		{
+			case "red":
+				match.Team = TeamColor.Red;
+				break;
+			case "blue":
+				match.Team = TeamColor.Blue;
+				break;
+		}
+		
+		this.OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
 	}
 
 	private void UpdateGameMode(string banchoResponse)

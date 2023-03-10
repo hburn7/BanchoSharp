@@ -4,7 +4,6 @@ using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
 using BanchoSharp.Multiplayer;
 using Humanizer;
-using Humanizer.Localisation;
 using System.Net.Sockets;
 
 namespace BanchoSharp;

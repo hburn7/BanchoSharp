@@ -177,6 +177,36 @@ public class MultiplayerTests
 		}
 	}
 
+	[TestCase("Timper changed to Red", "Timper", TeamColor.Red)]
+	[TestCase("Timper changed to Blue", "Timper", TeamColor.Blue)]
+	[TestCase("Moved Timper to team Red", "Timper", TeamColor.Red)]
+	[TestCase("Moved Timper to team Blue", "Timper", TeamColor.Blue)]
+	public void TestTeamSwap(string response, string player, TeamColor team)
+	{
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Timper", 1));
+
+		var match = _lobby.FindPlayer("Timper");
+		Assert.That(match, Is.Not.Null);
+
+		bool playerChangedTeam = false;
+		TeamColor? prevTeam = null;
+		TeamColor? newTeam = null;
+		_lobby.OnPlayerChangedTeam += e =>
+		{
+			playerChangedTeam = true;
+			prevTeam = e.PreviousTeam;
+			newTeam = e.Player.Team;
+		};
+		
+		InvokeToLobby(response);
+		Assert.Multiple(() =>
+		{
+			Assert.That(playerChangedTeam, Is.True);
+			Assert.That(prevTeam, Is.EqualTo(TeamColor.None));
+			Assert.That(newTeam, Is.EqualTo(team));
+		});
+	}
+
 	[Test]
 	public void TestMpClearhost()
 	{
