@@ -179,7 +179,9 @@ public class MultiplayerTests
 
 	[TestCase("Timper changed to Red", "Timper", TeamColor.Red)]
 	[TestCase("Timper changed to Blue", "Timper", TeamColor.Blue)]
-	public void TestTeamSwapSimple(string response, string player, TeamColor team)
+	[TestCase("Moved Timper to team Red", "Timper", TeamColor.Red)]
+	[TestCase("Moved Timper to team Blue", "Timper", TeamColor.Blue)]
+	public void TestTeamSwap(string response, string player, TeamColor team)
 	{
 		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Timper", 1));
 
