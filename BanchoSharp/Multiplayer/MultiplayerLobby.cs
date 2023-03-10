@@ -129,6 +129,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			HostIsChangingMap = false;
 		};
 
+		OnPlayerChangedTeam += _ => InvokeOnStateChanged();
+
 		OnAllPlayersReady += () => SetAllPlayerStates(PlayerState.Ready);
 	}
 
@@ -371,6 +373,10 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			UpdateGameMode(banchoResponse);
 		}
+		else if (IsTeamSwapNotification(banchoResponse))
+		{
+			UpdatePlayerTeam(banchoResponse);
+		}
 		else if (IsTeamModeNotification(banchoResponse))
 		{
 			UpdateFormatWincondition(banchoResponse);
@@ -491,6 +497,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
 	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
 	private bool IsGameModeUpdateNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match mode to ");
+	private bool IsTeamSwapNotification(string banchoResponse) => banchoResponse.Contains("changed to Red") || banchoResponse.Contains("changed to Blue");
 
 	private void UpdateName(string banchoResponse)
 	{
@@ -503,6 +510,32 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		Name = name;
 		InvokeOnStateChanged();
+	}
+
+	private void UpdatePlayerTeam(string banchoResponse)
+	{
+		string player = banchoResponse.Split()[0];
+		string team = banchoResponse.Split()[^1];
+		
+		if(team != "Red" && team != "Blue")
+			return;
+
+		var match = FindPlayer(player);
+		if(match == null)
+			return;
+
+		var prevTeam = match.Team;
+		switch (team.ToLower())
+		{
+			case "red":
+				match.Team = TeamColor.Red;
+				break;
+			case "blue":
+				match.Team = TeamColor.Blue;
+				break;
+		}
+		
+		this.OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
 	}
 
 	private void UpdateGameMode(string banchoResponse)
