@@ -54,12 +54,11 @@ public class BeatmapShell
 		{
 			return false;
 		}
-		
+
 		return other.Id == Id && other.Title == Title && other.Artist == Artist && other.Difficulty == Difficulty && other.GameMode == GameMode;
 	}
 
 	protected bool Equals(BeatmapShell other) => Id == other.Id && Title == other.Title && Artist == other.Artist && Difficulty == other.Difficulty && GameMode == other.GameMode;
-
 	public override int GetHashCode() => HashCode.Combine(Id, Title, Artist, Difficulty, GameMode);
 }
 
@@ -122,7 +121,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			Players.Remove(kickedEventArgs.Player);
 			InvokeOnStateChanged();
 		};
-		
+
 		OnPlayerBanned += bannedEventArgs =>
 		{
 			Players.Remove(bannedEventArgs.Player);
@@ -137,7 +136,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		OnFormatChanged += (oldFmt, newFmt) =>
 		{
-			if(newFmt is LobbyFormat.TagCoop or LobbyFormat.HeadToHead && oldFmt is LobbyFormat.TeamVs or LobbyFormat.TagTeamVs)
+			if (newFmt is LobbyFormat.TagCoop or LobbyFormat.HeadToHead && oldFmt is LobbyFormat.TeamVs or LobbyFormat.TagTeamVs)
 			{
 				// If the format is changing from a team format to a non-team format, we need to remove all teams.
 				// This is done by setting the team of all players to none.
@@ -375,7 +374,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			player.State = state;
 		}
 	}
-	
+
 	private void UpdateLobbyFromBanchoBotSettingsResponse(string banchoResponse)
 	{
 		var parser = new MpSetResponseParser(banchoResponse);
@@ -387,13 +386,13 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 				OnFormatChanged?.Invoke(Format, cfg.Value.Format);
 				Format = cfg.Value.Format;
 			}
-		
-			if(cfg.Value.WinCondition.HasValue && WinCondition != cfg.Value.WinCondition.Value)
+
+			if (cfg.Value.WinCondition.HasValue && WinCondition != cfg.Value.WinCondition.Value)
 			{
 				OnWinConditionChanged?.Invoke(WinCondition, cfg.Value.WinCondition.Value);
 				WinCondition = cfg.Value.WinCondition!.Value;
 			}
-			
+
 			if (cfg.Value.Size.HasValue)
 			{
 				Size = cfg.Value.Size.Value;
@@ -401,7 +400,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 			return;
 		}
-		
+
 		if (IsRoomNameNotification(banchoResponse))
 		{
 			UpdateName(banchoResponse);
@@ -450,7 +449,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsMpClearHostNotification(banchoResponse))
 		{
-			this.Host = null;
+			Host = null;
 		}
 		else if (IsMatchFinishedNotification(banchoResponse))
 		{
@@ -500,7 +499,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsPlayerBanNotification(banchoResponse))
 		{
-			var bannedPlayer = banchoResponse.Split()[1];
+			string bannedPlayer = banchoResponse.Split()[1];
 			var bannedPlayerObj = Players.FirstOrDefault(p => p.Name == bannedPlayer);
 			if (bannedPlayerObj != null)
 			{
@@ -549,22 +548,25 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private bool IsMatchAbortedNotification(string banchoResponse) => banchoResponse.StartsWith("Aborted the match");
 	private bool IsMatchSizeNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match to size");
 	private bool IsGameModeUpdateNotification(string banchoResponse) => banchoResponse.StartsWith("Changed match mode to ");
-
 	private bool IsSelfInvokedTeamSwapNotification(string banchoResponse) => banchoResponse.Contains("changed to Red") || banchoResponse.Contains("changed to Blue");
 
 	private void UpdatePlayerTeamManuallyInvoked(string banchoResponse)
 	{
-		var splits = banchoResponse.Split();
-		var player = splits[1];
-		var team = splits[^1];
-		
-		if(team != "Red" && team != "Blue")
+		string[] splits = banchoResponse.Split();
+		string player = splits[1];
+		string team = splits[^1];
+
+		if (team != "Red" && team != "Blue")
+		{
 			return;
-		
+		}
+
 		var match = FindPlayer(player);
-		if(match == null)
+		if (match == null)
+		{
 			return;
-		
+		}
+
 		var prevTeam = match.Team;
 		switch (team.ToLower())
 		{
@@ -575,7 +577,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 				match.Team = TeamColor.Blue;
 				break;
 		}
-		
+
 		OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
 	}
 
@@ -596,13 +598,17 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	{
 		string player = banchoResponse.Split()[0];
 		string team = banchoResponse.Split()[^1];
-		
-		if(team != "Red" && team != "Blue")
+
+		if (team != "Red" && team != "Blue")
+		{
 			return;
+		}
 
 		var match = FindPlayer(player);
-		if(match == null)
+		if (match == null)
+		{
 			return;
+		}
 
 		var prevTeam = match.Team;
 		switch (team.ToLower())
@@ -614,8 +620,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 				match.Team = TeamColor.Blue;
 				break;
 		}
-		
-		this.OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
+
+		OnPlayerChangedTeam?.Invoke(new PlayerChangedTeamEventArgs(match, prevTeam));
 	}
 
 	private void UpdateGameMode(string banchoResponse)
@@ -940,7 +946,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		difficulty = artist = title = null;
 
 		string[] splits = banchoResponse.Split(" - ");
-		
+
 		try
 		{
 			id = int.Parse(splits[0].Split()[1].Split('/').Last());
@@ -969,7 +975,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		string artist = "";
 		string title = "";
-		
+
 		string[] splits = banchoResponse.Split(" - ");
 		if (!int.TryParse(splits[0].Split("https://osu.ppy.sh/b/")[1].Split()[0], out int id))
 		{
@@ -1055,7 +1061,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		string formatSub = banchoResponse[..index];
 		string format = formatSub.Split(':')[1].Trim();
-		
+
 		var newFormat = ParseFormat(format);
 		var newWinCondition = ParseWinCondition(winCondition);
 
@@ -1064,8 +1070,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			OnFormatChanged?.Invoke(Format, newFormat);
 			Format = newFormat;
 		}
-		
-		if(WinCondition != newWinCondition)
+
+		if (WinCondition != newWinCondition)
 		{
 			OnWinConditionChanged?.Invoke(WinCondition, newWinCondition);
 			WinCondition = newWinCondition;
@@ -1132,7 +1138,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 				Logger.Warn($"Failed to parse mod called: {modStr}");
 			}
 		}
-		
+
 		// Update mods for all players in the lobby
 		foreach (var player in Players)
 		{

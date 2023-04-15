@@ -3,7 +3,7 @@
 namespace BanchoSharp.Messaging;
 
 /// <summary>
-/// Responsible for handling the parsing of BanchoBot's response to !mp set
+///  Responsible for handling the parsing of BanchoBot's response to !mp set
 /// </summary>
 public class MpSetResponseParser
 {
@@ -12,15 +12,18 @@ public class MpSetResponseParser
 	public MpSetResponseParser(string banchoResponse)
 	{
 		_response = banchoResponse;
-		
+
 		IsMpSetResponse = _response.StartsWith("Changed match settings to ");
 		if (!IsMpSetResponse)
 		{
 			return;
 		}
-		
+
 		ResolvedConfiguration = Parse();
 	}
+
+	public bool IsMpSetResponse { get; }
+	public MpSetConfig? ResolvedConfiguration { get; }
 
 	private MpSetConfig? Parse()
 	{
@@ -35,6 +38,7 @@ public class MpSetResponseParser
 			{
 				return null;
 			}
+
 			if (tokens.Length == 1)
 			{
 				// Only the format was set
@@ -58,11 +62,11 @@ public class MpSetResponseParser
 				{
 					Logger.Warn($"Failed to parse {sizeParse} as an integer. Size unable to be determined.");
 				}
-				
+
 				config.Format = (LobbyFormat)Enum.Parse(typeof(LobbyFormat), tokens[1].Trim());
 				config.WinCondition = (WinCondition)Enum.Parse(typeof(WinCondition), tokens[2].Trim());
 			}
-			
+
 			return config;
 		}
 		catch (Exception e)
@@ -71,14 +75,11 @@ public class MpSetResponseParser
 			return null;
 		}
 	}
-
-	public bool IsMpSetResponse { get; }
-	public MpSetConfig? ResolvedConfiguration { get; private set; }
 }
 
 public struct MpSetConfig
 {
-	public LobbyFormat Format { get; set; } // AKA teammode in docs
+	public LobbyFormat Format { get; set; }         // AKA teammode in docs
 	public WinCondition? WinCondition { get; set; } // AKA scoremode in docs
 	public int? Size { get; set; }
 }
