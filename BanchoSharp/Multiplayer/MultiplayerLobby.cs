@@ -149,6 +149,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
 	public event Action<GameMode, GameMode>? OnGameModeChanged;
+	public event Action<LobbyFormat, LobbyFormat>? OnFormatChanged;
+	public event Action<WinCondition, WinCondition>? OnWinConditionChanged;
 	public event Action? OnClosed;
 	public event Action<IMultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
@@ -1025,9 +1027,22 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		string formatSub = banchoResponse[..index];
 		string format = formatSub.Split(':')[1].Trim();
+		
+		var newFormat = ParseFormat(format);
+		var newWinCondition = ParseWinCondition(winCondition);
 
-		WinCondition = ParseWinCondition(winCondition);
-		Format = ParseFormat(format);
+		if (Format != newFormat)
+		{
+			OnFormatChanged?.Invoke(Format, newFormat);
+			Format = newFormat;
+		}
+		
+		if(WinCondition != newWinCondition)
+		{
+			OnWinConditionChanged?.Invoke(WinCondition, newWinCondition);
+			WinCondition = newWinCondition;
+		}
+
 		InvokeOnStateChanged();
 	}
 

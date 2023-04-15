@@ -54,6 +54,8 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	public event Action OnMatchStarted;
 	public event Action OnMatchFinished;
 	public event Action<GameMode, GameMode> OnGameModeChanged;
+	public event Action<LobbyFormat, LobbyFormat> OnFormatChanged;
+	public event Action<WinCondition, WinCondition> OnWinConditionChanged;
 	public event Action OnClosed;
 	public event Action OnAllPlayersReady;
 	public event Action<IMultiplayerPlayer> OnHostChanged;
