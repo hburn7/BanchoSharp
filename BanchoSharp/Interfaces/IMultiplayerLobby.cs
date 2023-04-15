@@ -10,8 +10,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// </summary>
     public long Id { get; }
     /// <summary>
-    ///  The name of the multiplayer lobby. e.g. "OWC 2021: (team A) vs. (team B)
-    ///  Not to be confused with FullName./>
+    ///  The name of the multiplayer lobby. e.g. "OWC 2021: (team A) vs. (team B)" - Not to be confused with FullName
     /// </summary>
     public string Name { get; }
     /// <summary>
@@ -47,7 +46,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     public bool MatchInProgress { get; }
 
     /// <summary>
-    /// A flag indicating if the lobby is locked for new players to join
+    /// A flag indicating if the lobby is locked, preventing players from changing slots
     /// </summary>
     public bool IsLocked { get; }
 
@@ -106,7 +105,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     public Mods Mods { get; }
 
     /// <summary>
-    /// Event triggered when settings have been updated.
+    /// Event triggered when match settings have been updated.
     /// </summary>
     public event Action OnSettingsUpdated;
 
