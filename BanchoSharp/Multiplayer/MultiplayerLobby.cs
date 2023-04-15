@@ -134,8 +134,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			HostIsChangingMap = false;
 		};
 
-		OnFormatChanged += (oldFmt, newFmt) =>
+		OnFormatChanged += args =>
 		{
+			var oldFmt = args.PreviousLobbyFormat;
+			var newFmt = args.CurrentLobbyFormat;
+			
 			if (newFmt is LobbyFormat.TagCoop or LobbyFormat.HeadToHead && oldFmt is LobbyFormat.TeamVs or LobbyFormat.TagTeamVs)
 			{
 				// If the format is changing from a team format to a non-team format, we need to remove all teams.
@@ -169,9 +172,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchAborted;
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
-	public event Action<GameMode, GameMode>? OnGameModeChanged;
-	public event Action<LobbyFormat, LobbyFormat>? OnFormatChanged;
-	public event Action<WinCondition, WinCondition>? OnWinConditionChanged;
+	public event Action<GameModeChangedEventArgs>? OnGameModeChanged;
+	public event Action<FormatChangedEventArgs>? OnFormatChanged;
+	public event Action<WinConditionChangedEventArgs>? OnWinConditionChanged;
 	public event Action? OnClosed;
 	public event Action<IMultiplayerPlayer>? OnHostChanged;
 	public event Action<BeatmapShell>? OnBeatmapChanged;
@@ -383,13 +386,13 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		{
 			if (Format != cfg.Value.Format)
 			{
-				OnFormatChanged?.Invoke(Format, cfg.Value.Format);
+				OnFormatChanged?.Invoke(new FormatChangedEventArgs(Format, cfg.Value.Format));
 				Format = cfg.Value.Format;
 			}
 
 			if (cfg.Value.WinCondition.HasValue && WinCondition != cfg.Value.WinCondition.Value)
 			{
-				OnWinConditionChanged?.Invoke(WinCondition, cfg.Value.WinCondition.Value);
+				OnWinConditionChanged?.Invoke(new WinConditionChangedEventArgs(WinCondition, cfg.Value.WinCondition.Value));
 				WinCondition = cfg.Value.WinCondition!.Value;
 			}
 
@@ -651,7 +654,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (newGameMode != null)
 		{
-			OnGameModeChanged?.Invoke(GameMode, newGameMode.Value);
+			OnGameModeChanged?.Invoke(new GameModeChangedEventArgs(GameMode, newGameMode.Value));
 			GameMode = newGameMode.Value;
 		}
 	}
@@ -1067,13 +1070,13 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		if (Format != newFormat)
 		{
-			OnFormatChanged?.Invoke(Format, newFormat);
+			OnFormatChanged?.Invoke(new FormatChangedEventArgs(Format, newFormat));
 			Format = newFormat;
 		}
 
 		if (WinCondition != newWinCondition)
 		{
-			OnWinConditionChanged?.Invoke(WinCondition, newWinCondition);
+			OnWinConditionChanged?.Invoke(new WinConditionChangedEventArgs(WinCondition, newWinCondition));
 			WinCondition = newWinCondition;
 		}
 

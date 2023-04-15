@@ -147,23 +147,17 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// <summary>
     /// Event triggered when the game mode has changed.
     /// </summary>
-    /// <param name="previous">Previous game mode.</param>
-    /// <param name="current">Current game mode.</param>
-    public event Action<GameMode, GameMode> OnGameModeChanged;
+    public event Action<GameModeChangedEventArgs> OnGameModeChanged;
 
     /// <summary>
     /// Event triggered when the lobby format has changed.
     /// </summary>
-    /// <param name="previous">Previous lobby format.</param>
-    /// <param name="current">Current lobby format.</param>
-    public event Action<LobbyFormat, LobbyFormat> OnFormatChanged;
+    public event Action<FormatChangedEventArgs> OnFormatChanged;
 
     /// <summary>
     /// Event triggered when the win condition has changed.
     /// </summary>
-    /// <param name="previous">Previous win condition.</param>
-    /// <param name="current">Current win condition.</param>
-    public event Action<WinCondition, WinCondition> OnWinConditionChanged;
+    public event Action<WinConditionChangedEventArgs> OnWinConditionChanged;
 
     /// <summary>
     /// Event triggered when the multiplayer lobby has been closed.
