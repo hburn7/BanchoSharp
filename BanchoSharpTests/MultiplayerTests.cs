@@ -208,6 +208,20 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestBannedPlayer()
+	{
+		Assert.That(!_lobby.Players.Any());
+		var dummy = new MultiplayerPlayer(_lobby, "ban_me", 1);
+		
+		_lobby.Players.Add(dummy);
+		Assert.That(_lobby.Players.Any());
+		
+		InvokeToLobby("Banned ban_me from the match");
+		
+		Assert.That(!_lobby.Players.Any());
+	}
+
+	[Test]
 	public void TestMpClearhost()
 	{
 		var dummy = new MultiplayerPlayer(_lobby, "test", 1);

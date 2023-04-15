@@ -67,6 +67,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
 	public event Action<PlayerSlotMoveEventArgs> OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs> OnPlayerDisconnected;
 	public event Action<PlayerKickedEventArgs> OnPlayerKicked;
+	public event Action<PlayerBannedEventArgs> OnPlayerBanned;
 	/// <summary>
 	///  Invoked when the host is selecting a new map
 	/// </summary>

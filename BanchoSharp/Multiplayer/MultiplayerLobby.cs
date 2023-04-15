@@ -122,6 +122,12 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			Players.Remove(kickedEventArgs.Player);
 			InvokeOnStateChanged();
 		};
+		
+		OnPlayerBanned += bannedEventArgs =>
+		{
+			Players.Remove(bannedEventArgs.Player);
+			InvokeOnStateChanged();
+		};
 
 		OnBeatmapChanged += shell =>
 		{
@@ -151,6 +157,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<PlayerSlotMoveEventArgs>? OnPlayerSlotMove;
 	public event Action<PlayerDisconnectedEventArgs>? OnPlayerDisconnected;
 	public event Action<PlayerKickedEventArgs>? OnPlayerKicked;
+	public event Action<PlayerBannedEventArgs>? OnPlayerBanned;
 	public event Action? OnHostChangingMap;
 	public long Id { get; }
 	public string Name { get; private set; }
@@ -461,6 +468,15 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			OnMatchAborted?.Invoke();
 			MatchInProgress = false;
 		}
+		else if (IsPlayerBanNotification(banchoResponse))
+		{
+			var bannedPlayer = banchoResponse.Split()[1];
+			var bannedPlayerObj = Players.FirstOrDefault(p => p.Name == bannedPlayer);
+			if (bannedPlayerObj != null)
+			{
+				OnPlayerBanned?.Invoke(new PlayerBannedEventArgs(bannedPlayerObj, DateTime.Now));
+			}
+		}
 		else if (IsMatchSizeNotification(banchoResponse))
 		{
 			if (!int.TryParse(banchoResponse.Split().Last(), out int size))
@@ -493,6 +509,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	// Example: "Slot 1  Not Ready https://osu.ppy.sh/u/00000000 Player      [Host / HardRock]"
 	private bool IsSlotStatusNotification(string banchoResponse) => banchoResponse.StartsWith("Slot ");
 	private bool IsMatchActiveModsNotification(string banchoResponse) => banchoResponse.StartsWith("Active mods: ");
+	private bool IsPlayerBanNotification(string banchoResponse) => banchoResponse.StartsWith("Banned") && banchoResponse.Contains("from the match");
 	private bool IsMatchModsUpdatedNotification(string banchoResponse) => banchoResponse.EndsWith("enabled FreeMod") || banchoResponse.EndsWith("disabled FreeMod");
 	private bool IsPlayerFinishedNotification(string banchoResponse) => banchoResponse.Contains("finished playing (Score:");
 	private bool IsPlayerLeftNotification(string banchoResponse) => banchoResponse.EndsWith(" left the game.");
