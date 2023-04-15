@@ -1,7 +1,15 @@
-﻿namespace BanchoSharp.Interfaces;
-
+﻿/// <summary>
+/// Interface for notifying object's state changes.
+/// </summary>
 public interface INotifyStateChanged
 {
-	public event Action OnStateChanged;
-	public void InvokeOnStateChanged();
+    /// <summary>
+    /// Event triggered on state change.
+    /// </summary>
+    event Action OnStateChanged;
+
+    /// <summary>
+    /// Method to invoke OnStateChanged event.
+    /// </summary>
+    void InvokeOnStateChanged();
 }
