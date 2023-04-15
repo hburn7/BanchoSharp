@@ -1,0 +1,22 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=222b8d9a_002Dcb67_002D4744_002D8c06_002D964118047241/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TestMpSet" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestMpSet&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestAllPlayersReady&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=29b86039_002D8cc6_002D4042_002Dae61_002D124ae55e717c/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TestMpSet #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestMpSet&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestMpClearhost&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestTeamSwapSimple&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestTeamSwap&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::7CDEB7A7-A87B-4729-B249-B99DDFDFD726::net6.0::BanchoSharpTests.MultiplayerTests.TestBannedPlayer&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=76b7d3bf_002Ded17_002D4a0a_002D9548_002D82cad5870ddb/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="ExceptionTests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="C:\Users\Stage\Documents\github\BanchoSharp\BanchoSharpTests" Presentation="&amp;lt;BanchoSharpTests&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	
+	</wpf:ResourceDictionary>
