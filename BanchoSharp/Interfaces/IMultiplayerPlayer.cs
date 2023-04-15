@@ -2,27 +2,69 @@
 
 namespace BanchoSharp.Interfaces;
 
+/// <summary>
+/// Interface for a player in a multiplayer lobby
+/// </summary>
 public interface IMultiplayerPlayer
 {
-	public int? Id { get; set; }
-	public string Name { get; }
-	public TeamColor Team { get; set; }
-	public int Slot { get; set; }
-	public Mods Mods { get; set; }
-	public int? Score { get; set; }
-	public bool? Passed { get; set; }
-	[Obsolete("IsReady is deprecated, use PlayerState instead", true)]
-	public bool IsReady { get; set; }
-	public PlayerState State { get; set; }
-	public IMultiplayerLobby? Lobby { get; set; }
+    /// <summary>
+    /// Gets or sets the unique identifier of the player
+    /// </summary>
+    public int? Id { get; set; }
 
-	/// <summary>
-	///  This is used for targeting a <see cref="IMultiplayerPlayer" /> in the chat room
-	/// </summary>
-	/// <returns>#ID or NAME of player</returns>
-	public string TargetableName();
+    /// <summary>
+    /// Gets the name of the player
+    /// </summary>
+    public string Name { get; }
 
-	public bool Equals(object? other);
-	public bool Equals(MultiplayerPlayer other);
-	public int GetHashCode();
+    /// <summary>
+    /// Gets or sets the team color of the player
+    /// </summary>
+    public TeamColor Team { get; set; }
+
+    /// <summary>
+    /// Gets or sets the slot number of the player
+    /// </summary>
+    public int Slot { get; set; }
+
+    /// <summary>
+    /// Gets or sets the mods used by the player
+    /// </summary>
+    public Mods Mods { get; set; }
+
+    /// <summary>
+    /// Gets or sets the score of the player
+    /// </summary>
+    public int? Score { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating if the player has passed
+    /// </summary>
+    public bool? Passed { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating if the player is ready
+    /// </summary>
+    [Obsolete("IsReady is deprecated, use PlayerState instead", true)]
+    public bool IsReady { get; set; }
+
+    /// <summary>
+    /// Gets or sets the state of the player
+    /// </summary>
+    public PlayerState State { get; set; }
+
+    /// <summary>
+    /// Gets or sets the lobby the player is in
+    /// </summary>
+    public IMultiplayerLobby? Lobby { get; set; }
+
+    /// <summary>
+    /// Returns the name of the player or the Id preceded by a "#" if Id is not null, for use in targeting the player in chat
+    /// </summary>
+    /// <returns>The targetable name of the player</returns>
+    public string TargetableName();
+
+    public bool Equals(object? other);
+    public bool Equals(MultiplayerPlayer other);
+    public int GetHashCode();
 }
