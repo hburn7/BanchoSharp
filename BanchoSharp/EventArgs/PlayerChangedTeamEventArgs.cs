@@ -6,7 +6,7 @@ namespace BanchoSharp.EventArgs;
 /// <summary>
 /// EventArgs for when a player changes teams in a multiplayer lobby.
 /// </summary>
-public class PlayerChangedTeamEventArgs : EventArgs
+public class PlayerChangedTeamEventArgs : System.EventArgs
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="PlayerChangedTeamEventArgs"/> class.
