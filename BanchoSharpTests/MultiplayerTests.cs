@@ -263,9 +263,9 @@ public class MultiplayerTests
         {
 	        Assert.That(_lobby.Players[0].Team, Is.EqualTo(TeamColor.Blue));
 	        Assert.That(_lobby.Players[1].Team, Is.EqualTo(TeamColor.Blue));
-	        Assert.That(_lobby.Players[2].Team, Is.EqualTo(TeamColor.Blue));
+	        Assert.That(_lobby.Players[2].Team, Is.EqualTo(TeamColor.Red));
 	        Assert.That(_lobby.Players[3].Team, Is.EqualTo(TeamColor.Blue));
-	        Assert.That(_lobby.Players[4].Team, Is.EqualTo(TeamColor.Blue));
+	        Assert.That(_lobby.Players[4].Team, Is.EqualTo(TeamColor.Red));
         });
         
         InvokeToLobby("Changed match settings to HeadToHead");

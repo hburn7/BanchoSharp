@@ -135,6 +135,28 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			HostIsChangingMap = false;
 		};
 
+		OnFormatChanged += (oldFmt, newFmt) =>
+		{
+			if(newFmt is LobbyFormat.TagCoop or LobbyFormat.HeadToHead && oldFmt is LobbyFormat.TeamVs or LobbyFormat.TagTeamVs)
+			{
+				// If the format is changing from a team format to a non-team format, we need to remove all teams.
+				// This is done by setting the team of all players to none.
+				foreach (var player in Players)
+				{
+					player.Team = TeamColor.None;
+				}
+			}
+			else
+			{
+				// Check for the opposite and warn
+				if (oldFmt is LobbyFormat.TagCoop or LobbyFormat.HeadToHead && newFmt is LobbyFormat.TeamVs or LobbyFormat.TagTeamVs)
+				{
+					Logger.Warn("Lobby format was changed from a non-team format to a team format. " +
+					            "There is no way to know what teams players are on without an !mp settings call.");
+				}
+			}
+		};
+
 		OnPlayerChangedTeam += _ => InvokeOnStateChanged();
 
 		OnAllPlayersReady += () => SetAllPlayerStates(PlayerState.Ready);
@@ -360,12 +382,18 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		var cfg = parser.ResolvedConfiguration;
 		if (parser.IsMpSetResponse && cfg.HasValue)
 		{
-			Format = cfg.Value.Format;
-			if (cfg.Value.WinCondition.HasValue)
+			if (Format != cfg.Value.Format)
 			{
-				WinCondition = cfg.Value.WinCondition.Value;
+				OnFormatChanged?.Invoke(Format, cfg.Value.Format);
+				Format = cfg.Value.Format;
 			}
-
+		
+			if(cfg.Value.WinCondition.HasValue && WinCondition != cfg.Value.WinCondition.Value)
+			{
+				OnWinConditionChanged?.Invoke(WinCondition, cfg.Value.WinCondition.Value);
+				WinCondition = cfg.Value.WinCondition!.Value;
+			}
+			
 			if (cfg.Value.Size.HasValue)
 			{
 				Size = cfg.Value.Size.Value;
