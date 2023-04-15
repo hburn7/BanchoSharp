@@ -15,15 +15,13 @@ public class BanchoClient : IBanchoClient
 	///  Invoker interface responsible for processing messages sent by BanchoBot.
 	/// </summary>
 	private IBanchoBotEventInvoker _banchoBotEventInvoker;
+	private int _deploysInPeriod;
+	private readonly int _messagesThreshold;
+	private readonly int _rateLimitIntervalSeconds;
 	private StreamReader? _reader;
+	private DateTime _resetPeriod = DateTime.MinValue;
 	private TcpClient? _tcp;
 	private StreamWriter? _writer;
-
-	private DateTime _resetPeriod = DateTime.MinValue;
-	private int _deploysInPeriod = 0;
-	private int _messagesThreshold;
-	private int _rateLimitIntervalSeconds;
-	
 	public event Action? OnPingReceived;
 	public BanchoClientConfig ClientConfig { get; set; }
 	public IBanchoBotEvents BanchoBotEvents { get; private set; }
@@ -106,7 +104,7 @@ public class BanchoClient : IBanchoClient
 		else if (name.StartsWith("#"))
 		{
 			await Execute($"JOIN {name}");
-			
+
 			var channel = AddChannel(name);
 			OnChannelJoined?.Invoke(channel);
 		}
@@ -114,19 +112,6 @@ public class BanchoClient : IBanchoClient
 		{
 			await QueryUserAsync(name);
 		}
-	}
-
-	public async Task JoinTournamentLobbyAsync(IMultiplayerLobby lobby)
-	{
-		if (ContainsChannel(lobby.ChannelName))
-		{
-			return;
-		}
-		
-		await Execute($"JOIN {lobby.ChannelName}");
-		Channels.Add(lobby);
-		Logger.Debug($"Added tournament lobby channel to memory: {lobby}");
-		OnChannelJoined?.Invoke(lobby);
 	}
 
 	public async Task PartChannelAsync(string name)
@@ -182,6 +167,19 @@ public class BanchoClient : IBanchoClient
 	{
 		Dispose(true);
 		GC.SuppressFinalize(this);
+	}
+
+	public async Task JoinTournamentLobbyAsync(IMultiplayerLobby lobby)
+	{
+		if (ContainsChannel(lobby.ChannelName))
+		{
+			return;
+		}
+
+		await Execute($"JOIN {lobby.ChannelName}");
+		Channels.Add(lobby);
+		Logger.Debug($"Added tournament lobby channel to memory: {lobby}");
+		OnChannelJoined?.Invoke(lobby);
 	}
 
 	private void RemoveChannel(string channelName)
@@ -278,7 +276,7 @@ public class BanchoClient : IBanchoClient
 				{
 					channel ??= AddChannel(priv.Recipient);
 				}
-				
+
 				if (channel.MessageHistory == null)
 				{
 					Logger.Warn($"Failed to append to MessageHistory for {priv}");
@@ -360,7 +358,7 @@ public class BanchoClient : IBanchoClient
 		}
 
 		await _writer!.WriteLineAsync(message);
-		
+
 		// Rate limiter
 		if (_resetPeriod < DateTime.Now)
 		{
@@ -377,7 +375,7 @@ public class BanchoClient : IBanchoClient
 				await Task.Delay(_resetPeriod - DateTime.Now);
 			}
 		}
-		
+
 		OnDeploy?.Invoke(message);
 	}
 
@@ -461,7 +459,7 @@ public class BanchoClient : IBanchoClient
 	{
 		_rateLimitIntervalSeconds = clientConfig.IsBot ? 60 : 5;
 		_messagesThreshold = clientConfig.IsBot ? 300 : 10;
-		
+
 		ClientConfig = clientConfig;
 
 		if (ClientConfig.IgnoredCommands != null)
@@ -483,7 +481,7 @@ public class BanchoClient : IBanchoClient
 	public BanchoClient()
 	{
 		ClientConfig = new BanchoClientConfig(new IrcCredentials());
-		
+
 		_messagesThreshold = ClientConfig.IsBot ? 300 : 10;
 		_rateLimitIntervalSeconds = ClientConfig.IsBot ? 60 : 5;
 

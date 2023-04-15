@@ -208,6 +208,20 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestBannedPlayer()
+	{
+		Assert.That(!_lobby.Players.Any());
+		var dummy = new MultiplayerPlayer(_lobby, "ban_me", 1);
+		
+		_lobby.Players.Add(dummy);
+		Assert.That(_lobby.Players.Any());
+		
+		InvokeToLobby("Banned ban_me from the match");
+		
+		Assert.That(!_lobby.Players.Any());
+	}
+
+	[Test]
 	public void TestMpClearhost()
 	{
 		var dummy = new MultiplayerPlayer(_lobby, "test", 1);
@@ -223,6 +237,50 @@ public class MultiplayerTests
 	}
 
 	[Test]
+	public void TestFormatUpdateResetsPlayerInfo()
+    {
+        InvokeToLobby("Changed match settings to TeamVs");
+		Assert.That(_lobby.Format, Is.EqualTo(LobbyFormat.TeamVs));
+		
+		InvokeToLobby("Stage joined in slot 1 for team blue.");
+		InvokeToLobby("Timper joined in slot 2 for team blue.");
+		InvokeToLobby("Foo joined in slot 3 for team red.");
+		InvokeToLobby("Bar joined in slot 4 for team blue.");
+		InvokeToLobby("Baz joined in slot 5 for team red.");
+		
+		Assert.That(_lobby.Players.Count, Is.EqualTo(5));
+        Assert.Multiple(() =>
+        {
+            Assert.That(_lobby.Players[0].Team, Is.EqualTo(TeamColor.Blue));
+            Assert.That(_lobby.Players[1].Team, Is.EqualTo(TeamColor.Blue));
+            Assert.That(_lobby.Players[2].Team, Is.EqualTo(TeamColor.Red));
+            Assert.That(_lobby.Players[3].Team, Is.EqualTo(TeamColor.Blue));
+            Assert.That(_lobby.Players[4].Team, Is.EqualTo(TeamColor.Red));
+        });
+        
+        InvokeToLobby("Changed match settings to TagTeamVs");
+        Assert.Multiple(() =>
+        {
+	        Assert.That(_lobby.Players[0].Team, Is.EqualTo(TeamColor.Blue));
+	        Assert.That(_lobby.Players[1].Team, Is.EqualTo(TeamColor.Blue));
+	        Assert.That(_lobby.Players[2].Team, Is.EqualTo(TeamColor.Red));
+	        Assert.That(_lobby.Players[3].Team, Is.EqualTo(TeamColor.Blue));
+	        Assert.That(_lobby.Players[4].Team, Is.EqualTo(TeamColor.Red));
+        });
+        
+        InvokeToLobby("Changed match settings to HeadToHead");
+        Assert.That(_lobby.Format, Is.EqualTo(LobbyFormat.HeadToHead));
+        Assert.Multiple(() =>
+        {
+	        Assert.That(_lobby.Players[0].Team, Is.EqualTo(TeamColor.None));
+	        Assert.That(_lobby.Players[1].Team, Is.EqualTo(TeamColor.None));
+	        Assert.That(_lobby.Players[2].Team, Is.EqualTo(TeamColor.None));
+	        Assert.That(_lobby.Players[3].Team, Is.EqualTo(TeamColor.None));
+	        Assert.That(_lobby.Players[4].Team, Is.EqualTo(TeamColor.None));
+        });
+    }
+
+    [Test]
 	public void TestMpSettingsBeatmap()
 	{
 		string input = "Beatmap: https://osu.ppy.sh/b/2572163 Kurokotei - Galaxy Collapse";
