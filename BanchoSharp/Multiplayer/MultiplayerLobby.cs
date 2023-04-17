@@ -1142,6 +1142,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 		}
 
+		// Bancho will report that both Doubletime and Nightcore is enabled whenever Nightcore is picked, causing
+		// the parsing above to mark both mods as enabled. So if nightcore is set, disable doubletime.
+		if ((Mods & Mods.Nightcore) != 0)
+			Mods &= ~Mods.DoubleTime;
+
 		// Update mods for all players in the lobby
 		foreach (var player in Players)
 		{
