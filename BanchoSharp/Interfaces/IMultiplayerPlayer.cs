@@ -33,14 +33,9 @@ public interface IMultiplayerPlayer
     public Mods Mods { get; set; }
 
     /// <summary>
-    /// Gets or sets the score of the player
+    /// The score history of this player for the current lobby
     /// </summary>
-    public int? Score { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating if the player has passed
-    /// </summary>
-    public bool? Passed { get; set; }
+    public List<IMultiplayerScoreReport> ScoreHistory { get; }
 
     /// <summary>
     /// Gets or sets a value indicating if the player is ready
@@ -63,6 +58,9 @@ public interface IMultiplayerPlayer
     /// </summary>
     /// <returns>The targetable name of the player</returns>
     public string TargetableName();
+    
+    public void AddScoreReport(IMultiplayerScoreReport report);
+    public bool RemoveScoreReport(IMultiplayerScoreReport report);
 
     public bool Equals(object? other);
     public bool Equals(MultiplayerPlayer other);

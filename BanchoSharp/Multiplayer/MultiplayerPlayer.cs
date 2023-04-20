@@ -20,6 +20,7 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 		Team = team;
 		Mods = mods;
 		State = PlayerState.NotReady;
+		ScoreHistory = new List<IMultiplayerScoreReport>();
 	}
 
 	public int? Id { get; set; }
@@ -29,13 +30,14 @@ public class MultiplayerPlayer : IMultiplayerPlayer
 
 	// The mods the player is using, these only get updated after "!mp settings" has been ran.
 	public Mods Mods { get; set; }
-	public int? Score { get; set; }
-	public bool? Passed { get; set; }
+	public List<IMultiplayerScoreReport> ScoreHistory { get; }
 	[Obsolete("IsReady is deprecated, use PlayerState instead", true)]
 	public bool IsReady { get; set; }
 	public PlayerState State { get; set; }
 	public IMultiplayerLobby? Lobby { get; set; }
 	public string TargetableName() => Id.HasValue ? $"#{Id}" : Name.Replace(' ', '_');
+	public void AddScoreReport(IMultiplayerScoreReport report) => ScoreHistory.Add(report);
+	public bool RemoveScoreReport(IMultiplayerScoreReport report) => ScoreHistory.Remove(report);
 
 	public override bool Equals(object? other) => other?.GetType() == typeof(MultiplayerPlayer) &&
 	                                              Name.Equals((other as MultiplayerPlayer)!.Name);

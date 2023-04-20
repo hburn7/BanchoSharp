@@ -54,7 +54,7 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// A flag indicating if the lobby is completely closed and unavailable
     /// </summary>
     public bool IsClosed { get; }
-
+    
     /// <summary>
     /// The remaining time for the lobby timer to expire
     /// </summary>
@@ -98,7 +98,12 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// List of referees for the multiplayer match.
     /// </summary>
     public List<string> Referees { get; }
-
+    
+    /// <summary>
+    /// The list of score reports for the multiplayer lobby
+    /// </summary>
+    public List<IMultiplayerScoreReport> ScoreHistory { get; }
+    
     /// <summary>
     /// Mods selected for the multiplayer match.
     /// </summary>
@@ -143,6 +148,8 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// Event triggered when the match has finished.
     /// </summary>
     public event Action OnMatchFinished;
+
+    public event Action<IMultiplayerScoreReport> OnScoreReport;
 
     /// <summary>
     /// Event triggered when the game mode has changed.
@@ -373,4 +380,11 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// </summary>
     /// <returns>A task that completes after the message has been sent.</returns>
     public Task SendHelpMessageAsync();
+
+    /// <summary>
+    /// Returns all scores for a team
+    /// </summary>
+    /// <param name="team"></param>
+    /// <returns></returns>
+    public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team);
 }
