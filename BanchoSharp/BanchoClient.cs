@@ -223,7 +223,7 @@ public class BanchoClient : IBanchoClient
 			OnChannelJoined?.Invoke(mp);
 		};
 
-		OnDeploy += m => Logger.Trace($"(deploy) {m}");
+		OnDeploy += m => { Logger.Trace(!m.Contains("PASS") ? $"(deploy) {m}" : $"(deploy) PASS ********"); };
 
 		OnConnected += () => Logger.Info("Client connected");
 		OnDisconnected += () =>
