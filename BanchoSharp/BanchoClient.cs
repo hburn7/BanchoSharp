@@ -81,7 +81,28 @@ public class BanchoClient : IBanchoClient
 
 	public async Task SendPrivateMessageAsync(string destination, string content)
 	{
+		/**
+		 * If the user's message starts with a ':', such as in ":)",
+		 * osu!Bancho will receive the message as ")" instead of ":)";
+		 * it truncates this colon for some reason.
+		 *
+		 * By checking for this and inserting a second colon for the
+		 * message sent to the server only, then returning the state to normal,
+		 * we ensure the user's intended message gets delivered to Bancho
+		 * while maintaining consistency in the user's program.
+		 */
+		if (content.StartsWith(':'))
+		{
+			content = content.Insert(0, ":");
+		}
+		
 		await Execute($"PRIVMSG {destination} {content}");
+
+		if (content.StartsWith(':'))
+		{
+			content = content[1..];
+		}
+		
 		var priv = PrivateIrcMessage.CreateFromParameters(ClientConfig.Credentials.Username, destination, content);
 		var channel = GetChannel(destination);
 		channel?.MessageHistory?.AddLast(priv);
