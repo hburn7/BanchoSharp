@@ -384,7 +384,8 @@ public interface IMultiplayerLobby : IChatChannel, INotifyStateChanged
     /// <summary>
     /// Returns all scores for a team
     /// </summary>
-    /// <param name="team"></param>
-    /// <returns></returns>
-    public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team);
+    /// <param name="team">The team in reference</param>
+    /// <param name="deltaTime">Returns data only from the specified recency</param>
+    /// <returns>An empty collection if the filters return no values</returns>
+    public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team, TimeSpan? deltaTime = null);
 }

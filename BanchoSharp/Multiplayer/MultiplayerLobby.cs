@@ -366,7 +366,26 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
-	public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team) => ScoreHistory.Where(x => x.Player.Team == team);
+	public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team, TimeSpan? timeDelta = null)
+	{
+		var hist = ScoreHistory.Where(x => x.Player.Team == team).ToList();
+		if(timeDelta.HasValue && timeDelta.Value != TimeSpan.Zero)
+		{
+			try
+			{
+				var dt = DateTime.Now - timeDelta.Value;
+				hist = hist.Where(x => x.Timestamp >= dt).ToList();
+			}
+			catch (ArgumentOutOfRangeException)
+			{
+				// timeDelta is too large to represent in a DateTime, which is fine
+				// as we can just ignore the timeDelta altogether.
+			}
+		}
+
+		return hist;
+	}
+
 	public event Action? OnAllPlayersReady;
 	public event Action? OnStateChanged;
 	public void InvokeOnStateChanged() => OnStateChanged?.Invoke();

@@ -1,3 +1,4 @@
+using BanchoSharp.Extensions;
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging.ChatMessages;
 using BanchoSharp.Multiplayer;
@@ -586,6 +587,65 @@ public class MultiplayerTests
 			Assert.That(p2.ScoreHistory[0].Score, Is.EqualTo(196409));
 			Assert.That(p2.ScoreHistory[0].Passed, Is.False);
 			Assert.That(p2.ScoreHistory[0].Player, Is.EqualTo(p2));
+		});
+	}
+
+	[Test]
+	public void TestTeamScoreSum()
+	{
+		// Simulate a 4v4 team score sum
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 5, TeamColor.Red));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 6, TeamColor.Red));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 3", 7, TeamColor.Red));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 4", 8, TeamColor.Red));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 5", 1, TeamColor.Blue));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 6", 2, TeamColor.Blue));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 7", 3, TeamColor.Blue));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 8", 4, TeamColor.Blue));
+		
+		InvokeToLobby("Player 1 finished playing (Score: 7428260, PASSED).");
+		InvokeToLobby("Player 2 finished playing (Score: 196409, PASSED).");
+		InvokeToLobby("Player 3 finished playing (Score: 7428260, PASSED).");
+		InvokeToLobby("Player 4 finished playing (Score: 196409, PASSED).");
+		InvokeToLobby("Player 5 finished playing (Score: 1150456, PASSED).");
+		InvokeToLobby("Player 6 finished playing (Score: 875423, PASSED).");
+		InvokeToLobby("Player 7 finished playing (Score: 256892, PASSED).");
+		InvokeToLobby("Player 8 finished playing (Score: 998021, PASSED).");
+
+		var recentRed = _lobby.GetScoresForTeam(TeamColor.Red);
+		var recentBlue = _lobby.GetScoresForTeam(TeamColor.Blue);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(recentRed, Is.Not.Null);
+			Assert.That(recentBlue, Is.Not.Null);
+		});
+		
+		Assert.Multiple(() =>
+		{
+			Assert.That(recentRed.ScoreSum(), Is.EqualTo(7428260 + 196409 + 7428260 + 196409));
+			Assert.That(recentBlue.ScoreSum(), Is.EqualTo(1150456 + 875423 + 256892 + 998021));
+		});
+	}
+
+	[Test]
+	public async Task TestScoreTimeDeltaAsync()
+	{
+		// Simulate a 1v1 and compare the time delta between the two scores
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 1));
+		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 2));
+		
+		InvokeToLobby("Player 1 finished playing (Score: 7428260, PASSED).");
+		InvokeToLobby("Player 2 finished playing (Score: 196409, FAILED).");
+
+		await Task.Delay(TimeSpan.FromSeconds(5));
+		var recentScoresTd = _lobby.GetScoresForTeam(TeamColor.None, TimeSpan.FromSeconds(3));
+		var allScores = _lobby.GetScoresForTeam(TeamColor.None, TimeSpan.MaxValue);
+		
+		Assert.Multiple(() =>
+		{
+			Assert.That(recentScoresTd, Is.Empty); // Null as the time window has passed
+			Assert.That(allScores, Is.Not.Empty);
 		});
 	}
 }
