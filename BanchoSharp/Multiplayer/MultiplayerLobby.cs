@@ -1,4 +1,5 @@
 using BanchoSharp.EventArgs;
+using BanchoSharp.Exceptions;
 using BanchoSharp.Interfaces;
 using BanchoSharp.Messaging;
 using BanchoSharp.Messaging.ChatMessages;
@@ -17,9 +18,9 @@ public enum LobbyFormat
 public enum WinCondition
 {
 	Score,
-	ScoreV2,
 	Accuracy,
-	Combo
+	Combo,
+	ScoreV2
 }
 
 public enum GameMode
@@ -80,6 +81,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		Name = name;
 		Size = 16;
 		GameMode = GameMode.osu;
+		ScoreHistory = new List<IMultiplayerScoreReport>();
 
 		_client.OnMessageReceived += m =>
 		{
@@ -159,6 +161,8 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 		};
 
+		OnScoreReport += r => ScoreHistory.Add(r);
+
 		OnPlayerChangedTeam += _ => InvokeOnStateChanged();
 
 		OnAllPlayersReady += () => SetAllPlayerStates(PlayerState.Ready);
@@ -172,6 +176,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action? OnMatchAborted;
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
+	public event Action<IMultiplayerScoreReport>? OnScoreReport;
 	public event Action<GameModeChangedEventArgs>? OnGameModeChanged;
 	public event Action<FormatChangedEventArgs>? OnFormatChanged;
 	public event Action<WinConditionChangedEventArgs>? OnWinConditionChanged;
@@ -205,6 +210,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public GameMode GameMode { get; private set; } = GameMode.osu;
 	public List<IMultiplayerPlayer> Players { get; } = new();
 	public List<string> Referees { get; } = new();
+	public List<IMultiplayerScoreReport> ScoreHistory { get; }
 	public Mods Mods { get; private set; } = Mods.None;
 
 	public async Task UpdateSettingsAsync(LobbyFormat? format, WinCondition? winCondition, GameMode? gameMode)
@@ -360,6 +366,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	}
 
 	public async Task SendHelpMessageAsync() => await SendAsync("!mp help");
+	public IEnumerable<IMultiplayerScoreReport> GetScoresForTeam(TeamColor team) => ScoreHistory.Where(x => x.Player.Team == team);
 	public event Action? OnAllPlayersReady;
 	public event Action? OnStateChanged;
 	public void InvokeOnStateChanged() => OnStateChanged?.Invoke();
@@ -485,7 +492,14 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 		}
 		else if (IsPlayerFinishedNotification(banchoResponse))
 		{
-			UpdatePlayerResults(banchoResponse);
+			try
+			{
+				UpdatePlayerResults(banchoResponse);
+			}
+			catch (PlayerMissingException e)
+			{
+				Logger.Warn($"Player missing from match: {e.Message}");
+			}
 		}
 		else if (IsPlayerLeftNotification(banchoResponse))
 		{
@@ -1142,6 +1156,11 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 			}
 		}
 
+		// Bancho will report that both Doubletime and Nightcore is enabled whenever Nightcore is picked, causing
+		// the parsing above to mark both mods as enabled. So if nightcore is set, disable doubletime.
+		if ((Mods & Mods.Nightcore) != 0)
+			Mods &= ~Mods.DoubleTime;
+
 		// Update mods for all players in the lobby
 		foreach (var player in Players)
 		{
@@ -1157,11 +1176,12 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		// Grab the player name from the beginning of the string
 		string playerName = banchoResponse[..banchoResponse.IndexOf(" finished playing (Score: ", StringComparison.Ordinal)];
+		bool passed = banchoResponse.Contains("PASSED");
 		var player = FindPlayer(playerName);
 
 		if (player is null)
 		{
-			return;
+			throw new PlayerMissingException("Could not report score for missing player: " + playerName);
 		}
 
 		// Grab everything after the "(Score: " part, so for example "3818280, PASSED)."
@@ -1169,8 +1189,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 
 		int score = int.Parse(resultStr.Split(',')[0]);
 
-		player.Score = score;
-		player.Passed = resultStr.Contains("PASSED");
+		var report = new MultiplayerScoreReport(player, score, passed, DateTime.Now);
+		OnScoreReport?.Invoke(report);
+		player.AddScoreReport(report);
 		InvokeOnStateChanged();
 	}
 

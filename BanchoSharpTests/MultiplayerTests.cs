@@ -549,17 +549,43 @@ public class MultiplayerTests
 	{
 		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 1", 1));
 		_lobby.Players.Add(new MultiplayerPlayer(_lobby, "Player 2", 2));
-
+		
 		InvokeToLobby("Player 1 finished playing (Score: 7428260, PASSED).");
 		InvokeToLobby("Player 2 finished playing (Score: 196409, FAILED).");
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(_lobby.FindPlayer("Player 1")?.Score, Is.EqualTo(7428260));
-			Assert.That(_lobby.FindPlayer("Player 2")?.Score, Is.EqualTo(196409));
-
-			Assert.That(_lobby.FindPlayer("Player 1")?.Passed, Is.True);
-			Assert.That(_lobby.FindPlayer("Player 2")?.Passed, Is.False);
+			Assert.That(_lobby.ScoreHistory.Count, Is.EqualTo(2));
+			Assert.That(_lobby.ScoreHistory[0].Player.Name, Is.EqualTo("Player 1"));
+			Assert.That(_lobby.ScoreHistory[0].Score, Is.EqualTo(7428260));
+			Assert.That(_lobby.ScoreHistory[0].Passed, Is.True);
+			
+			Assert.That(_lobby.ScoreHistory[1].Player.Name, Is.EqualTo("Player 2"));
+			Assert.That(_lobby.ScoreHistory[1].Score, Is.EqualTo(196409));
+			Assert.That(_lobby.ScoreHistory[1].Passed, Is.False);
+		});
+		
+		Assert.Multiple(() =>
+		{
+			var p1 = _lobby.FindPlayer("Player 1");
+			var p2 = _lobby.FindPlayer("Player 2");
+			
+			Assert.Multiple(() =>
+			{
+				Assert.That(p1, Is.Not.Null);
+				Assert.That(p2, Is.Not.Null);
+			});
+			
+			Assert.That(p1!.ScoreHistory.Count, Is.EqualTo(1));
+			Assert.That(p2!.ScoreHistory.Count, Is.EqualTo(1));
+			
+			Assert.That(p1.ScoreHistory[0].Score, Is.EqualTo(7428260));
+			Assert.That(p1.ScoreHistory[0].Passed, Is.True);
+			Assert.That(p1.ScoreHistory[0].Player, Is.EqualTo(p1));
+			
+			Assert.That(p2.ScoreHistory[0].Score, Is.EqualTo(196409));
+			Assert.That(p2.ScoreHistory[0].Passed, Is.False);
+			Assert.That(p2.ScoreHistory[0].Player, Is.EqualTo(p2));
 		});
 	}
 }
