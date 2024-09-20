@@ -264,7 +264,6 @@ public class BanchoClient : IBanchoClient
 			if (m is IPrivateIrcMessage priv)
 			{
 				_banchoBotEventInvoker.ProcessMessage(priv);
-				OnPrivateMessageReceived?.Invoke(priv);
 
 				var channel = GetChannel(priv.IsDirect ? priv.Sender : priv.Recipient);
 				if (priv.IsDirect)
@@ -420,14 +419,13 @@ public class BanchoClient : IBanchoClient
 
 			OnMessageReceived?.Invoke(message);
 
-			if (message is IPrivateIrcMessage dm)
-			{
-				OnPrivateMessageReceived?.Invoke(dm);
+			if (message is not IPrivateIrcMessage dm) continue;
+			
+			OnPrivateMessageReceived?.Invoke(dm);
 
-				if (dm.Recipient == ClientConfig.Credentials.Username)
-				{
-					OnAuthenticatedUserDMReceived?.Invoke(dm);
-				}
+			if (dm.Recipient == ClientConfig.Credentials.Username)
+			{
+				OnAuthenticatedUserDMReceived?.Invoke(dm);
 			}
 		}
 	}
