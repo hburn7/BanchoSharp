@@ -165,7 +165,9 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	public event Action<int>? OnLobbyTimerStarted;
 	public event Action? OnLobbyTimerFinished;
 	public event Action<int>? OnMatchStartTimerStarted;
+#pragma warning disable CS0067
 	public event Action? OnMatchStartTimerFinished;
+#pragma warning restore CS0067
 	public event Action? OnMatchAborted;
 	public event Action? OnMatchStarted;
 	public event Action? OnMatchFinished;
@@ -942,7 +944,7 @@ public sealed class MultiplayerLobby : Channel, IMultiplayerLobby
 	private void UpdateBeatmapFromMpSettings(string banchoResponse)
 	{
 		int id = -1;
-		string difficulty, artist, title;
+		string? difficulty, artist, title;
 		difficulty = artist = title = null;
 
 		string[] splits = banchoResponse.Split(" - ");
