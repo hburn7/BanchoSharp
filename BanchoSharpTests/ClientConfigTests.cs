@@ -12,6 +12,12 @@ public class ClientConfigTests
 		_client = new BanchoClient();
 	}
 
+	[TearDown]
+	public void TearDown()
+	{
+		_client?.Dispose();
+	}
+
 	[Test]
 	public async Task TestSaveMessagesConfig()
 	{

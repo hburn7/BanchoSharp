@@ -49,7 +49,7 @@ public class SlashCommandHandler : ISlashCommandHandler
                                      _prompt.StartsWith("/") &&
                                      _prompt.Length > 1;
 
-    private string[]? GetParamsForCommand() => Command.ToLower() switch
+    private string[]? GetParamsForCommand() => Command?.ToLower() switch
     {
         "join" => GetFirstArgOrDefault(),
         "part" => GetFirstArgOrDefault(),

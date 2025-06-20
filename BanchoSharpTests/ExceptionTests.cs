@@ -3,10 +3,10 @@ namespace BanchoSharpTests;
 public class ExceptionTests
 {
 	[SetUp]
-	public async Task Setup() {}
+	public void Setup() {}
 
 	[Test]
-	public async Task TestNotConnectedException()
+	public void TestNotConnectedException()
 	{
 		BanchoClient client = new();
 		Assert.Multiple(() =>

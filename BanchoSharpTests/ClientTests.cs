@@ -12,6 +12,9 @@ public class ClientTests
 	[SetUp]
 	public void Setup() => _client = new BanchoClient();
 
+	[TearDown]
+	public void TearDown() => _client?.Dispose();
+
 	[Test]
 	public async Task TestJoinChannelAsync()
 	{

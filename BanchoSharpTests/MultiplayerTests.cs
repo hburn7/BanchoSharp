@@ -46,6 +46,12 @@ public class MultiplayerTests
 		_lobby = DefaultLobby(_client);
 	}
 
+	[TearDown]
+	public void TearDown()
+	{
+		_client?.Dispose();
+	}
+
 	[TestCase("OWC 2021: (United States) vs. (Germany)", "https://osu.ppy.sh/mp/106275696", 106275696,
 		Mods.HalfTime | Mods.Freemod, 1096903, "Unmei no Dark Side -Rolling Gothic mix", "Kanpyohgo", "Satellite's Lunatic",
 		LobbyFormat.TagCoop, WinCondition.Score, TeamColor.None, true, PlayerState.NotReady,
@@ -79,13 +85,13 @@ public class MultiplayerTests
 			Assert.That(_lobby.HistoryUrl, Is.EqualTo(historyUrl));
 			Assert.That(_lobby.Id, Is.EqualTo(matchId));
 			Assert.That(_lobby.Mods, Is.EqualTo(lobbyMods));
-			Assert.That(_lobby.CurrentBeatmap.Id, Is.EqualTo(beatmapId));
-			Assert.That(_lobby.CurrentBeatmap.Title, Is.EqualTo(beatmapTitle));
-			Assert.That(_lobby.CurrentBeatmap.Artist, Is.EqualTo(beatmapArtist));
-			Assert.That(_lobby.CurrentBeatmap.Difficulty, Is.EqualTo(beatmapDifficulty));
+			Assert.That(_lobby.CurrentBeatmap?.Id, Is.EqualTo(beatmapId));
+			Assert.That(_lobby.CurrentBeatmap?.Title, Is.EqualTo(beatmapTitle));
+			Assert.That(_lobby.CurrentBeatmap?.Artist, Is.EqualTo(beatmapArtist));
+			Assert.That(_lobby.CurrentBeatmap?.Difficulty, Is.EqualTo(beatmapDifficulty));
 			Assert.That(_lobby.Format, Is.EqualTo(format));
 			Assert.That(_lobby.WinCondition, Is.EqualTo(winCondition));
-			Assert.That(_lobby.Host.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
+			Assert.That(_lobby.Host?.Equals(_lobby.Players[0]), Is.EqualTo(p1IsHost));
 			Assert.That(_lobby.Players[0].Team, Is.EqualTo(p1TeamColor));
 			Assert.That(_lobby.Players[0].State, Is.EqualTo(p1State));
 			Assert.That(_lobby.Players[0].Id, Is.EqualTo(p1Id));
