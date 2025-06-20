@@ -21,11 +21,11 @@ jobs:
     name: "Deploy binaries"
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.x
+          dotnet-version: 9.x
       - name: Install dependencies
         run: dotnet restore "${{ github.workspace }}/BanchoSharp/BanchoSharp.csproj"
       - name: Build
@@ -47,7 +47,7 @@ jobs:
       
       - name: Publish to NuGet on version change
         id: publish_nuget
-        uses: brandedoutcast/publish-nuget@v2.5.2
+        uses: brandedoutcast/publish-nuget@v2.5.5
         with:
           NUGET_KEY: "${{ secrets.NUGET_API_KEY }}"
           PROJECT_FILE_PATH: "BanchoSharp/BanchoSharp.csproj"
